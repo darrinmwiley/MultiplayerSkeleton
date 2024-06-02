@@ -5,14 +5,19 @@ using UnityEngine.SceneManagement;
 using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Connection;
+using FishNet.Object.Synchronizing;
 using Steamworks;
 
 
 public class SquareController : NetworkBehaviour
 {
+    [SyncVar]
     public string playerID;
+    [SyncVar]
     public string playerName;
+    [SyncVar(OnChange = nameof(OnColorChanged))]
     public Color color;
+
     private float x, y;
 
     public SquareController instance;
@@ -33,29 +38,21 @@ public class SquareController : NetworkBehaviour
         }
     }
 
+    public void OnColorChanged(Color oldValue, Color newValue, bool asServer)
+    {
+        gameObject.GetComponent<SpriteRenderer>().color = newValue;
+    }
+
     [ServerRpc]
     public void OnPlayerJoinedServer()
     {
-        OnPlayerJoined();
+        OnPlayerJoined(playerName);
     }
 
     [ObserversRpc]
-    public void OnPlayerJoined()
+    public void OnPlayerJoined(string playerName)
     {
-        Debug.Log("new player joined. sending color");
-        SetPlayerColorServer(gameObject,color);
-    }
-
-    [ServerRpc]
-    public void SetPlayerColorServer(GameObject player, Color color)
-    {
-        SetPlayerColor(player, color);
-    }
-
-    [ObserversRpc]
-    public void SetPlayerColor(GameObject player, Color color){
-        Debug.Log("setting color to "+color);
-        player.GetComponent<SpriteRenderer>().color = color;
+        Debug.Log(playerName+" joined!");
     }
 
     // Start is called before the first frame update

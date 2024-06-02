@@ -69,7 +69,7 @@ public class BootstrapManager : MonoBehaviour
         MainMenuManager.LobbyEntered(SteamMatchmaking.GetLobbyData(new CSteamID(CurrentLobbyID), "name"), _networkManager.IsServer);
 
         _fishySteamworks.SetClientAddress(SteamMatchmaking.GetLobbyData(new CSteamID(CurrentLobbyID), "HostAddress"));
-        //error is occurring on the line below:
+
         _fishySteamworks.StartConnection(/*server = */false);
     }
 

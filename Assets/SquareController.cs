@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Managing;
+using FishNet.Object;
+using FishNet.Connection;
 using Steamworks;
 
-public class SquareController : MonoBehaviour
+
+public class SquareController : NetworkBehaviour
 {
     public string playerID;
     private string playerName;
@@ -15,6 +18,17 @@ public class SquareController : MonoBehaviour
     public SquareController instance;
 
     void Awake() => instance = this;
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if(base.IsOwner)
+        {
+            
+        }else{
+            gameObject.GetComponent<SquareController>().enabled = false;
+        }
+    }
 
     // Start is called before the first frame update
     void Start()

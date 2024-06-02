@@ -36,12 +36,14 @@ public class SquareController : NetworkBehaviour
     [ServerRpc]
     public void OnPlayerJoinedServer()
     {
+        Debug.Log("new player joined. sending color");
         SetPlayerColor(gameObject,color);
         //setplayerinfo
     }
 
     [ObserversRpc]
     public void SetPlayerColor(GameObject player, Color color){
+        Debug.Log("setting color to "+color);
         player.GetComponent<SpriteRenderer>().color = color;
     }
 

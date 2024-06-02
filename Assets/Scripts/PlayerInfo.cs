@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayerInfo : MonoBehaviour
 {
+    public GameObject playerGameObject;
     public string playerID;
     public string playerName;
 }

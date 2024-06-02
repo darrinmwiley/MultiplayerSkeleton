@@ -27,16 +27,17 @@ public class SquareController : NetworkBehaviour
             playerID = SteamUser.GetSteamID().ToString();
             playerName = SteamFriends.GetPersonaName().ToString();
             color = new Color(Random.value, Random.value, Random.value);
-            SetPlayerColorServer(gameObject, color);
+            OnPlayerJoinedServer();
         }else{
             gameObject.GetComponent<SquareController>().enabled = false;
         }
     }
 
     [ServerRpc]
-    public void SetPlayerColorServer(GameObject player, Color color)
+    public void OnPlayerJoinedServer()
     {
-        SetPlayerColor(player, color);
+        SetPlayerColor(gameObject,color);
+        //setplayerinfo
     }
 
     [ObserversRpc]

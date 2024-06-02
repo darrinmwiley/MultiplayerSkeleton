@@ -11,8 +11,8 @@ using Steamworks;
 public class SquareController : NetworkBehaviour
 {
     public string playerID;
-    private string playerName;
-    private Color color;
+    public string playerName;
+    public Color color;
     private float x, y;
 
     public SquareController instance;
@@ -24,23 +24,30 @@ public class SquareController : NetworkBehaviour
         base.OnStartClient();
         if(base.IsOwner)
         {
-            
+            playerID = SteamUser.GetSteamID().ToString();
+            playerName = SteamFriends.GetPersonaName().ToString();
+            color = new Color(Random.value, Random.value, Random.value);
+            SetPlayerColorServer(gameObject, color);
         }else{
             gameObject.GetComponent<SquareController>().enabled = false;
         }
     }
 
+    [ServerRpc]
+    public void SetPlayerColorServer(GameObject player, Color color)
+    {
+        SetPlayerColor(player, color);
+    }
+
+    [ObserversRpc]
+    public void SetPlayerColor(GameObject player, Color color){
+        player.GetComponent<SpriteRenderer>().color = color;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        playerID = SteamUser.GetSteamID().ToString();
-        playerName = SteamFriends.GetPersonaName().ToString();
         gameObject.name = playerName;
-
-        // Make a random color
-        color = new Color(Random.value, Random.value, Random.value);
-        gameObject.GetComponent<SpriteRenderer>().color = color;
-        
         // Set location to be random -500 to 500 in x and y
         x = Random.Range(-8, 8);
         y = Random.Range(-4, 4);

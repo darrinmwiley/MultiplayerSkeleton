@@ -9,51 +9,67 @@ public class MainMenuManager : MonoBehaviour
 {
     private static MainMenuManager instance;
 
-    [SerializeField] private GameObject menuScreen, lobbyScreen;
-    [SerializeField] private TMP_InputField lobbyInput;
+    private bool inLobby;
+    private CSteamID lobbyID;
 
-    [SerializeField] private TextMeshProUGUI lobbyIDText, lobbyNameText;
-    [SerializeField] private Button startGameButton;
+    [SerializeField] private TextMeshProUGUI lobbyButtonText;
+    [SerializeField] private TextMeshProUGUI lobbyInfoText;
+    [SerializeField] private TextMeshProUGUI playButtonText;
+    
 
     private void Awake(){
         instance = this;
     } 
 
+    //todo, there is a "server already running exception if you create, leave, create again"
     public void CreateLobby()
     {
-        BootstrapManager.CreateLobby();
+        Debug.Log("invoking createLobby");
+        if(inLobby){
+            LeaveLobby();
+            inLobby = false;
+        }else{
+            BootstrapManager.CreateLobby();
+            inLobby = true;
+        }
     }
 
-    public void OpenMainMenu()
+    /*public void OpenMainMenu()
     {
-        CloseAllScreens();
         menuScreen.SetActive(true);
-    }
-
-    public void OpenLobby()
-    {
-        CloseAllScreens();
-        lobbyScreen.SetActive(true);
-    }
+    }*/
 
     public static void LobbyEntered(string lobbyName, bool isHost)
     {
-        instance.startGameButton.gameObject.SetActive(isHost);
-        instance.lobbyNameText.text = lobbyName;
-        instance.lobbyIDText.text = BootstrapManager.CurrentLobbyID.ToString();
-        instance.OpenLobby();
+        instance.lobbyInfoText.text = lobbyName;
+        instance.lobbyButtonText.text = "Leave Lobby";
+        instance.PrintLobbyMembers();
+        //instance.lobbyIDText.text = BootstrapManager.CurrentLobbyID.ToString();
     }
 
-    void CloseAllScreens()
+    public void PrintLobbyMembers()
     {
-        menuScreen.SetActive(false);
-        lobbyScreen.SetActive(false);
+        int memberCount = SteamMatchmaking.GetNumLobbyMembers(lobbyID);
+        Debug.Log("member num: "+memberCount);
+        List<string> memberNames = new List<string>();
+
+        for (int i = 0; i < memberCount; i++)
+        {
+            CSteamID memberID = SteamMatchmaking.GetLobbyMemberByIndex(lobbyID, i);
+            string memberName = SteamFriends.GetFriendPersonaName(memberID);
+            memberNames.Add(memberName);
+        }
+
+        foreach (var name in memberNames)
+        {
+            Debug.Log("Lobby member: " + name);
+        }
     }
 
     public void JoinLobby()
     {
-        CSteamID steamID = new CSteamID(System.Convert.ToUInt64(lobbyInput.text));
-        BootstrapManager.JoinByID(steamID);
+        lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
+        BootstrapManager.JoinByID(lobbyID);
     }
 
     public void StartGame() 
@@ -64,6 +80,8 @@ public class MainMenuManager : MonoBehaviour
 
     public void LeaveLobby()
     {
+        instance.lobbyInfoText.text = "No Lobby";
+        instance.lobbyButtonText.text = "Create Lobby";
         BootstrapManager.LeaveLobby();
     }
 }

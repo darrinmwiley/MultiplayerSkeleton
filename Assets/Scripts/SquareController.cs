@@ -89,6 +89,11 @@ public class SquareController : NetworkBehaviour
             moveX = 1;
         }
 
+        if (Input.GetKey(KeyCode.Space))
+        {
+            color = new Color(Random.value, Random.value, Random.value);
+        }
+
         // Move the player
         transform.position += new Vector3(moveX, moveY, 0) * Time.deltaTime * 5f; // Adjust the speed multiplier as needed
     }

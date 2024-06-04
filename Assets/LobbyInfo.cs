@@ -5,5 +5,14 @@ using UnityEngine;
 public class LobbyInfo : MonoBehaviour
 {
     public static LobbyInfo instance;
-    public static List<string> members = new List<string>();
+    public List<string> members = new List<string>();
+
+    public static void SetMembers(List<string> members){
+        instance.members = members;
+    }
+
+    public static List<string> GetMembers()
+    {
+        return instance.members;
+    }
 }

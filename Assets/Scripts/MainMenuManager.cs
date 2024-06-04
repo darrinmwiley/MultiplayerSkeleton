@@ -94,7 +94,7 @@ public class MainMenuManager : MonoBehaviour
 
     public void UpdateLobbyInfo(){
         string lobbyText = lobbyName+"\n\n";
-        foreach(string member in LobbyInfo.members)
+        foreach(string member in LobbyInfo.GetMembers())
         {
             lobbyText += member+"\n";
         }

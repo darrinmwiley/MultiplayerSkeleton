@@ -29,9 +29,21 @@ public class SquareController : NetworkBehaviour
         base.OnStartClient();
         if(base.IsOwner)
         {
+            InitClient();
         }else{
             gameObject.GetComponent<SquareController>().enabled = false;
         }
+    }
+
+    public void InitClient()
+    {
+        playerID = SteamUser.GetSteamID().ToString();
+        playerName = SteamFriends.GetPersonaName().ToString();
+        color = new Color(Random.value, Random.value, Random.value);
+        gameObject.name = playerName;
+        x = Random.Range(-8, 8);
+        y = Random.Range(-4, 4);
+        transform.position = new Vector3(x, y, transform.position.z);
     }
 
     public void OnColorChanged(Color oldValue, Color newValue, bool asServer)
@@ -50,19 +62,6 @@ public class SquareController : NetworkBehaviour
     public void OnPlayerJoined(string playerName)
     {
         Debug.Log(playerName+" joined!");
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        playerID = SteamUser.GetSteamID().ToString();
-        playerName = SteamFriends.GetPersonaName().ToString();
-        color = new Color(Random.value, Random.value, Random.value);
-        gameObject.name = playerName;
-        // Set location to be random -500 to 500 in x and y
-        x = Random.Range(-8, 8);
-        y = Random.Range(-4, 4);
-        transform.position = new Vector3(x, y, transform.position.z);
     }
 
     // Update is called once per frame

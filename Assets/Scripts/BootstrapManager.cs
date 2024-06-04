@@ -109,7 +109,7 @@ public class BootstrapManager : MonoBehaviour
         CurrentLobbyID = 0;
         instance._fishySteamworks.StopConnection(/*server =*/ false);
         if(instance._networkManager.IsServer)
-            instance._fishySteamworks.StopConnection(/*server = */ false);
+            instance._fishySteamworks.StopConnection(/*server = */ true);
         LobbyInfo.SetMembers(new List<string>());
     }
 }

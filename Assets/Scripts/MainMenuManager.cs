@@ -22,7 +22,6 @@ public class MainMenuManager : MonoBehaviour
         instance = this;
     } 
 
-    //todo, there is a "server already running exception if you create, leave, create again"
     public void CreateLobby()
     {
         Debug.Log("invoking createLobby");

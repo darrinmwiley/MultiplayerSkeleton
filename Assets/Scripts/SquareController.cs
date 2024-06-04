@@ -37,11 +37,14 @@ public class SquareController : NetworkBehaviour
 
     public IEnumerator InitClient()
     {
-
-        while(!SteamManager.Initialized)
+        // Wait until the Steam API is initialized
+        while (!SteamAPI.Init())
         {
+            Debug.Log("waiting for steam API");
             yield return null;
         }
+
+        Debug.Log("done waiting");
 
         playerID = SteamUser.GetSteamID().ToString();
         playerName = SteamFriends.GetPersonaName().ToString();

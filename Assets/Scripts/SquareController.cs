@@ -43,6 +43,7 @@ public class SquareController : NetworkBehaviour
     public void OnPlayerJoinedServer()
     {
         OnPlayerJoined(playerName);
+
     }
 
     [ObserversRpc]
@@ -57,7 +58,6 @@ public class SquareController : NetworkBehaviour
         playerID = SteamUser.GetSteamID().ToString();
         playerName = SteamFriends.GetPersonaName().ToString();
         color = new Color(Random.value, Random.value, Random.value);
-        OnPlayerJoinedServer();
         gameObject.name = playerName;
         // Set location to be random -500 to 500 in x and y
         x = Random.Range(-8, 8);
@@ -91,7 +91,7 @@ public class SquareController : NetworkBehaviour
 
         if (Input.GetKey(KeyCode.Space))
         {
-            color = new Color(Random.value, Random.value, Random.value);
+            OnPlayerJoinedServer();
         }
 
         // Move the player

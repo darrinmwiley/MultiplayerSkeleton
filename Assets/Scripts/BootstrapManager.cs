@@ -18,12 +18,9 @@ public class BootstrapManager : MonoBehaviour
     protected Callback<LobbyCreated_t> LobbyCreated;
     protected Callback<GameLobbyJoinRequested_t> JoinRequest;
     protected Callback<LobbyEnter_t> LobbyEntered;
+    protected Callback<LobbyChatUpdate_t> LobbyChatUpdate;
 
     public static ulong CurrentLobbyID;
-
-    public static void Foo(){
-        Debug.Log("foo");
-    }
 
     public static void CreateLobby(){
         SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypeFriendsOnly, 4);
@@ -34,6 +31,7 @@ public class BootstrapManager : MonoBehaviour
         LobbyCreated = Callback<LobbyCreated_t>.Create(OnLobbyCreated);
         JoinRequest = Callback<GameLobbyJoinRequested_t>.Create(OnJoinRequest);
         LobbyEntered = Callback<LobbyEnter_t>.Create(OnLobbyEntered);
+        LobbyChatUpdate = Callback<LobbyChatUpdate_t>.Create(OnLobbyChatUpdate);
     }
 
     public void GoToMenu()
@@ -71,6 +69,28 @@ public class BootstrapManager : MonoBehaviour
         _fishySteamworks.SetClientAddress(SteamMatchmaking.GetLobbyData(new CSteamID(CurrentLobbyID), "HostAddress"));
 
         _fishySteamworks.StartConnection(/*server = */false);
+
+        UpdateLobbyMembers();
+    }
+
+    private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
+    {
+        UpdateLobbyMembers();
+    }
+
+    private void UpdateLobbyMembers()
+    {
+        List<string> memberNames = new List<string>();
+        int memberCount = SteamMatchmaking.GetNumLobbyMembers(new CSteamID(CurrentLobbyID));
+
+        for (int i = 0; i < memberCount; i++)
+        {
+            CSteamID memberID = SteamMatchmaking.GetLobbyMemberByIndex(new CSteamID(CurrentLobbyID), i);
+            string memberName = SteamFriends.GetFriendPersonaName(memberID);
+            memberNames.Add(memberName);
+        }
+
+        LobbyInfo.SetMembers(memberNames);
     }
 
     public static void JoinByID(CSteamID steamID)
@@ -90,5 +110,6 @@ public class BootstrapManager : MonoBehaviour
         instance._fishySteamworks.StopConnection(/*server =*/ false);
         if(instance._networkManager.IsServer)
             instance._fishySteamworks.StopConnection(/*server = */ false);
+        LobbyInfo.SetMembers(new List<string>());
     }
 }

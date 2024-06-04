@@ -43,12 +43,15 @@ public class MainMenuManager : MonoBehaviour
     {
         instance.lobbyInfoText.text = lobbyName;
         instance.lobbyButtonText.text = "Leave Lobby";
+        Debug.Log("lobby entered: "+lobbyName);
+        instance.lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
         instance.PrintLobbyMembers();
         //instance.lobbyIDText.text = BootstrapManager.CurrentLobbyID.ToString();
     }
 
     public void PrintLobbyMembers()
     {
+        Debug.Log(lobbyID);
         int memberCount = SteamMatchmaking.GetNumLobbyMembers(lobbyID);
         Debug.Log("member num: "+memberCount);
         List<string> memberNames = new List<string>();
@@ -66,11 +69,14 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
+    /*
+    this was for the old join by lobby ID button
     public void JoinLobby()
     {
         lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
+        PrintLobbyMembers();
         BootstrapManager.JoinByID(lobbyID);
-    }
+    }*/
 
     public void StartGame() 
     {

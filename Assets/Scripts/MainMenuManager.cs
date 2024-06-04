@@ -10,6 +10,7 @@ public class MainMenuManager : MonoBehaviour
     private static MainMenuManager instance;
 
     private bool inLobby;
+    private string lobbyName;
     private CSteamID lobbyID;
 
     [SerializeField] private TextMeshProUGUI lobbyButtonText;
@@ -41,7 +42,7 @@ public class MainMenuManager : MonoBehaviour
 
     public static void LobbyEntered(string lobbyName, bool isHost)
     {
-        instance.lobbyInfoText.text = lobbyName;
+        instance.lobbyName = lobbyName;
         instance.lobbyButtonText.text = "Leave Lobby";
         Debug.Log("lobby entered: "+lobbyName);
         instance.lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
@@ -89,5 +90,22 @@ public class MainMenuManager : MonoBehaviour
         instance.lobbyInfoText.text = "No Lobby";
         instance.lobbyButtonText.text = "Create Lobby";
         BootstrapManager.LeaveLobby();
+    }
+
+    public void UpdateLobbyInfo(){
+        string lobbyText = lobbyName+"\n\n";
+        foreach(string member in LobbyInfo.members)
+        {
+            lobbyText += member+"\n";
+        }
+        lobbyInfoText.text = lobbyText;
+    }
+
+    void Update()
+    {
+        if(inLobby)
+        {
+            UpdateLobbyInfo();
+        }
     }
 }

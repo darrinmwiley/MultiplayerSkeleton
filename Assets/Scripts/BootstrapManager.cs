@@ -90,7 +90,7 @@ public class BootstrapManager : MonoBehaviour
             memberNames.Add(memberName);
         }
 
-        LobbyInfo.SetMembers(memberNames);
+        LobbyInfo.members = memberNames;
     }
 
     public static void JoinByID(CSteamID steamID)
@@ -110,6 +110,6 @@ public class BootstrapManager : MonoBehaviour
         instance._fishySteamworks.StopConnection(/*server =*/ false);
         if(instance._networkManager.IsServer)
             instance._fishySteamworks.StopConnection(/*server = */ false);
-        LobbyInfo.SetMembers(new List<string>());
+        LobbyInfo.members = new List<string>();
     }
 }

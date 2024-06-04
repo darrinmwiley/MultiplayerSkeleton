@@ -7,6 +7,8 @@ public class LobbyInfo : MonoBehaviour
     public static LobbyInfo instance;
     public List<string> members = new List<string>();
 
+    void Awake() => instance = this;
+
     public static void SetMembers(List<string> members){
         instance.members = members;
     }

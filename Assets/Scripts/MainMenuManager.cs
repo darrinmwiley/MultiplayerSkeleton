@@ -42,7 +42,7 @@ public class MainMenuManager : MonoBehaviour
 
     public static void LobbyEntered(string lobbyName, bool isHost)
     {
-        inLobby = true;
+        instance.inLobby = true;
         instance.lobbyName = lobbyName;
         instance.lobbyButtonText.text = "Leave Lobby";
         Debug.Log("lobby entered: "+lobbyName);

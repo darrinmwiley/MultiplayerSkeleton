@@ -13,7 +13,7 @@ public class SquareController : NetworkBehaviour
 {
     [SyncVar]
     public string playerID;
-    [SyncVar]
+    [SyncVar(OnChange = nameof(OnPlayerNameChange))]
     public string playerName;
     [SyncVar(OnChange = nameof(OnColorChanged))]
     public Color color;
@@ -49,6 +49,11 @@ public class SquareController : NetworkBehaviour
     public void OnColorChanged(Color oldValue, Color newValue, bool asServer)
     {
         gameObject.GetComponent<SpriteRenderer>().color = newValue;
+    }
+
+    public void OnPlayerNameChange(string oldValue, string newValue, bool asServer)
+    {
+        gameObject.name = newValue;
     }
 
     [ServerRpc]

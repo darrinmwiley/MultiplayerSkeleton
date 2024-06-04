@@ -8,12 +8,11 @@ using FishNet.Connection;
 using FishNet.Object.Synchronizing;
 using Steamworks;
 
-
 public class SquareController : NetworkBehaviour
 {
     [SyncVar]
     public string playerID;
-    [SyncVar(OnChange = nameof(OnPlayerNameChange))]
+    [SyncVar]
     public string playerName;
     [SyncVar(OnChange = nameof(OnColorChanged))]
     public Color color;
@@ -27,34 +26,14 @@ public class SquareController : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
-        if(base.IsOwner)
+        if (base.IsOwner)
         {
-             StartCoroutine(InitClient());
-        }else{
+            StartCoroutine(InitializeClientInfoWhenReady());
+        }
+        else
+        {
             gameObject.GetComponent<SquareController>().enabled = false;
         }
-    }
-
-    public IEnumerator InitClient()
-    {
-        // Wait until the Steam API is initialized
-        while (!SteamAPI.Init())
-        {
-            Debug.Log("waiting for steam API");
-            yield return null;
-        }
-
-        Debug.Log("done waiting");
-
-        playerID = SteamUser.GetSteamID().ToString();
-        playerName = SteamFriends.GetPersonaName().ToString();
-        color = new Color(Random.value, Random.value, Random.value);
-        gameObject.name = playerName;
-        x = Random.Range(-8, 8);
-        y = Random.Range(-4, 4);
-        transform.position = new Vector3(x, y, transform.position.z);
-
-        OnPlayerJoinedServer();
     }
 
     public void OnColorChanged(Color oldValue, Color newValue, bool asServer)
@@ -62,27 +41,51 @@ public class SquareController : NetworkBehaviour
         gameObject.GetComponent<SpriteRenderer>().color = newValue;
     }
 
-    public void OnPlayerNameChange(string oldValue, string newValue, bool asServer)
-    {
-        gameObject.name = newValue;
-    }
-
     [ServerRpc]
-    public void OnPlayerJoinedServer()
+    public void OnPlayerJoinedServer(string playerName)
     {
         OnPlayerJoined(playerName);
-
     }
 
     [ObserversRpc]
     public void OnPlayerJoined(string playerName)
     {
-        Debug.Log(playerName+" joined!");
+        Debug.Log(playerName + " joined!");
+    }
+
+    private IEnumerator InitializeClientInfoWhenReady()
+    {
+        // Wait until the Steam API is initialized
+        while (!SteamAPI.Init())
+        {
+            yield return null;
+        }
+
+        // Wait until the network object is fully initialized
+        while (!IsOwner)
+        {
+            yield return null;
+        }
+
+        playerID = SteamUser.GetSteamID().ToString();
+        playerName = SteamFriends.GetPersonaName().ToString();
+        color = new Color(Random.value, Random.value, Random.value);
+        gameObject.name = playerName;
+
+        // Set location to be random -8 to 8 in x and -4 to 4 in y
+        x = Random.Range(-8, 8);
+        y = Random.Range(-4, 4);
+        transform.position = new Vector3(x, y, transform.position.z);
+
+        // Now that initialization is complete, call the server RPC
+        OnPlayerJoinedServer(playerName);
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (!IsOwner) return;
+
         // If arrow keys are pressed, move player location accordingly
         float moveX = 0;
         float moveY = 0;
@@ -102,11 +105,6 @@ public class SquareController : NetworkBehaviour
         if (Input.GetKey(KeyCode.RightArrow))
         {
             moveX = 1;
-        }
-
-        if (Input.GetKey(KeyCode.Space))
-        {
-            OnPlayerJoinedServer();
         }
 
         // Move the player

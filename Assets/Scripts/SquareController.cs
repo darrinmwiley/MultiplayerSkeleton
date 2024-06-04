@@ -29,14 +29,20 @@ public class SquareController : NetworkBehaviour
         base.OnStartClient();
         if(base.IsOwner)
         {
-            InitClient();
+             StartCoroutine(InitClient());
         }else{
             gameObject.GetComponent<SquareController>().enabled = false;
         }
     }
 
-    public void InitClient()
+    public IEnumerator InitClient()
     {
+
+        while(!SteamManager.Initialized)
+        {
+            yield return null;
+        }
+
         playerID = SteamUser.GetSteamID().ToString();
         playerName = SteamFriends.GetPersonaName().ToString();
         color = new Color(Random.value, Random.value, Random.value);
@@ -44,6 +50,8 @@ public class SquareController : NetworkBehaviour
         x = Random.Range(-8, 8);
         y = Random.Range(-4, 4);
         transform.position = new Vector3(x, y, transform.position.z);
+
+        OnPlayerJoinedServer();
     }
 
     public void OnColorChanged(Color oldValue, Color newValue, bool asServer)

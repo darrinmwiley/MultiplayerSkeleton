@@ -12,7 +12,7 @@ public class SquareController : NetworkBehaviour
 {
     [SyncVar]
     public string playerID;
-    [SyncVar]
+    [SyncVar(OnChange = nameof(OnPlayerNameChanged))]
     public string playerName;
     [SyncVar(OnChange = nameof(OnColorChanged))]
     public Color color;
@@ -28,7 +28,7 @@ public class SquareController : NetworkBehaviour
         base.OnStartClient();
         if (base.IsOwner)
         {
-            StartCoroutine(InitializeClientInfoWhenReady());
+            InitClient();
         }
         else
         {
@@ -36,9 +36,40 @@ public class SquareController : NetworkBehaviour
         }
     }
 
+    private void InitClient()
+    {
+        string pid = SteamUser.GetSteamID().ToString();
+        string pname = SteamFriends.GetPersonaName().ToString();
+        Color color = new Color(Random.value, Random.value, Random.value);
+        InitClientServer(gameObject, pid, pname, color);
+
+        // Set location to be random -8 to 8 in x and -4 to 4 in y
+        x = Random.Range(-8, 8);
+        y = Random.Range(-4, 4);
+        transform.position = new Vector3(x, y, transform.position.z);
+
+        // Now that initialization is complete, call the server RPC
+        OnPlayerJoinedServer(playerName);
+    }
+
+    [ServerRpc]
+    public void InitClientServer(GameObject go, string playerID, string playerName, Color color)
+    {
+        SquareController ctrl = go.GetComponent<SquareController>();
+        ctrl.playerID = playerID;
+        ctrl.playerName = playerName;
+        ctrl.color = color;
+    }
+
+
     public void OnColorChanged(Color oldValue, Color newValue, bool asServer)
     {
         gameObject.GetComponent<SpriteRenderer>().color = newValue;
+    }
+
+    public void OnPlayerNameChanged(string oldValue, string newValue, bool asServer)
+    {
+        gameObject.name = newValue;
     }
 
     [ServerRpc]
@@ -51,34 +82,6 @@ public class SquareController : NetworkBehaviour
     public void OnPlayerJoined(string playerName)
     {
         Debug.Log(playerName + " joined!");
-    }
-
-    private IEnumerator InitializeClientInfoWhenReady()
-    {
-        // Wait until the Steam API is initialized
-        while (!SteamAPI.Init())
-        {
-            yield return null;
-        }
-
-        // Wait until the network object is fully initialized
-        while (!IsOwner)
-        {
-            yield return null;
-        }
-
-        playerID = SteamUser.GetSteamID().ToString();
-        playerName = SteamFriends.GetPersonaName().ToString();
-        color = new Color(Random.value, Random.value, Random.value);
-        gameObject.name = playerName;
-
-        // Set location to be random -8 to 8 in x and -4 to 4 in y
-        x = Random.Range(-8, 8);
-        y = Random.Range(-4, 4);
-        transform.position = new Vector3(x, y, transform.position.z);
-
-        // Now that initialization is complete, call the server RPC
-        OnPlayerJoinedServer(playerName);
     }
 
     // Update is called once per frame

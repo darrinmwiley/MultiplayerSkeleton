@@ -51,6 +51,7 @@ public class MainMenuManager : MonoBehaviour
         if(game.sceneNameToLoadOnOpen != "")
         {
             string[] scenesToClose = new string[] {"MainMenu"};
+            Debug.Log("player in lobby: "+LobbyInfo.IsPlayerInLobby());
             if(LobbyInfo.IsPlayerInLobby())
                 BootstrapNetworkManager.ChangeNetworkScene(game.sceneNameToLoadOnOpen, scenesToClose);
             else{

@@ -14,6 +14,7 @@ public class BootstrapNetworkManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void ChangeNetworkSceneHelper(string sceneName, string[] scenesToClose)
     {
+        Debug.Log("attempting to load "+sceneName);
         instance.CloseScenes(scenesToClose);
 
         SceneLoadData sld = new SceneLoadData(sceneName);
@@ -33,6 +34,7 @@ public class BootstrapNetworkManager : NetworkBehaviour
     {
         foreach (var sceneName in scenesToClose)
         {
+            Debug.Log("attempting to close " + sceneName);
             UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(sceneName);
         }
     }

@@ -48,8 +48,7 @@ MonoBehaviour:
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
-  _networkBehaviours:
-  - {fileID: -7760804274457191561}
+  _networkBehaviours: []
   <ParentNetworkObject>k__BackingField: {fileID: 0}
   <ChildNetworkObjects>k__BackingField: []
   SerializedTransformProperties:
@@ -63,7 +62,7 @@ MonoBehaviour:
   NetworkObserver: {fileID: 0}
   <PrefabId>k__BackingField: 3
   <SpawnableCollectionId>k__BackingField: 0
-  _scenePathHash: 2571393946
+  _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 2662344005332412320
 --- !u!114 &-7760804274457191561
@@ -78,8 +77,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b06b0a5ffeb420746a16ed589c52b93f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 6213333843337316810}
-  _networkObjectCache: {fileID: 6213333843337316810}
   gameTitle: Codeworld
   sceneNameToLoadOnOpen: 

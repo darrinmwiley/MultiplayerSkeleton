@@ -8,7 +8,7 @@ using FishNet.Connection;
 using FishNet.Object.Synchronizing;
 using Steamworks;
 
-public class LSGame : NetworkBehaviour{ 
+public class LSGame : MonoBehaviour{ 
 
     //todo: game open also needs to be done across the network? unless we just let the scene handle the rest . lets try that first
 

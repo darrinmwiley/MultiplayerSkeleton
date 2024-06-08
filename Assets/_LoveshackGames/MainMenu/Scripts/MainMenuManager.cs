@@ -51,7 +51,7 @@ public class MainMenuManager : MonoBehaviour
         instance.lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
         instance.PrintLobbyMembers();
 
-        BootstrapManager.SpawnClientOnServer(LobbyInfo.GetOwnedClient());
+        //BootstrapManager.SpawnClientOnServer(LobbyInfo.GetOwnedClient());
     }
 
     public void PrintLobbyMembers()

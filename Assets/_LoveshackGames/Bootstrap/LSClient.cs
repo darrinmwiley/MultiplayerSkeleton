@@ -19,6 +19,7 @@ public class LSClient : NetworkBehaviour
         if (base.IsOwner)
         {
             isOwnedClient = true;
+            BootstrapManager.SpawnClientOnServer(gameObject);
         }
         else
         {

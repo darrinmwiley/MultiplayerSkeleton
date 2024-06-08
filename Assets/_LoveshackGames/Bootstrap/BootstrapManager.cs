@@ -77,6 +77,7 @@ public class BootstrapManager : MonoBehaviour
 
     public static void SpawnClientOnServer(GameObject clientObj)
     {
+        //Debug.Log("request recieved to spawn "+clientObj.name+" on server");
         instance._networkManager.ServerManager.Spawn(clientObj);
     }
 

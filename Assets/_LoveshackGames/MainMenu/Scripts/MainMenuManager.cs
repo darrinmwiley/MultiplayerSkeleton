@@ -40,6 +40,7 @@ public class MainMenuManager : MonoBehaviour
     }
 
     public void OnPlayButtonClicked(){
+        BootstrapManager.OpenGame
         LSGame game = games[selectedGameIndex].GetComponent<LSGame>();
         game.Open();
         if(game.sceneNameToLoadOnOpen != "")

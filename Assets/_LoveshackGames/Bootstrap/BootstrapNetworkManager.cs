@@ -12,6 +12,24 @@ public class BootstrapNetworkManager : NetworkBehaviour
     private void Awake() => instance = this;
 
     [ServerRpc(RequireOwnership = false)]
+    public void StartGameServer(GameObject lsGameObject)
+    {
+        if(game.sceneNameToLoadOnOpen != "")
+        {
+            string[] scenesToClose = new string[] {"MainMenu"};
+            BootstrapNetworkManager.ChangeNetworkScene(game.sceneNameToLoadOnOpen, scenesToClose);
+        }
+        StartGameClient(lsGameObject);
+    }
+
+    [ObserversRpc]
+    void StartGameClient(GameObject lsGameObject)
+    {
+        LSGame game = lsGameObject.GetComponent<LSGame>();
+        game.Open();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
     public void ChangeNetworkSceneHelper(string sceneName, string[] scenesToClose)
     {
         Debug.Log("attempting to load "+sceneName);

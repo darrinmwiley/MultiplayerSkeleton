@@ -40,14 +40,14 @@ public class MainMenuManager : MonoBehaviour
     }
 
     public void OnPlayButtonClicked(){
-        LSGame game = games[selectedGameIndex].GetComponent<LSGame>();
-        BootstrapManager.StartGameServer(game);
-        game.Open();
-        if(game.sceneNameToLoadOnOpen != "")
-        {
-            string[] scenesToClose = new string[] {"MainMenu"};
-            BootstrapNetworkManager.ChangeNetworkScene(game.sceneNameToLoadOnOpen, scenesToClose);
-        }
+        //LSGame game = games[selectedGameIndex].GetComponent<LSGame>();
+        BootstrapNetworkManager.StartGame(games[selectedGameIndex]);
+        //game.Open();
+        //if(game.sceneNameToLoadOnOpen != "")
+        //{
+        //    string[] scenesToClose = new string[] {"MainMenu"};
+        //    BootstrapNetworkManager.ChangeNetworkScene(game.sceneNameToLoadOnOpen, scenesToClose);
+        //}
     }
 
     /*public void OpenMainMenu()

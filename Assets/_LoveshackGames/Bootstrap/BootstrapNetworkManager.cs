@@ -14,12 +14,17 @@ public class BootstrapNetworkManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void StartGameServer(GameObject lsGameObject)
     {
+        LSGame game = lsGameObject.GetComponent<LSGame>();
         if(game.sceneNameToLoadOnOpen != "")
         {
             string[] scenesToClose = new string[] {"MainMenu"};
             BootstrapNetworkManager.ChangeNetworkScene(game.sceneNameToLoadOnOpen, scenesToClose);
         }
         StartGameClient(lsGameObject);
+    }
+
+    public static void StartGame(GameObject lsGameObject){
+        instance.StartGameServer(lsGameObject);
     }
 
     [ObserversRpc]

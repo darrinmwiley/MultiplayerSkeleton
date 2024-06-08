@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Managing;
+using FishNet.Connection;
+using FishNet.Object;
 using Steamworks;
 
 public class BootstrapManager : MonoBehaviour
@@ -70,27 +72,17 @@ public class BootstrapManager : MonoBehaviour
 
         _fishySteamworks.StartConnection(/*server = */false);
 
-        UpdateLobbyMembers();
+        LobbyInfo.UpdateLobbyInfo(CurrentLobbyID);
     }
 
-    private void UpdateLobbyMembers()
+    public static void SpawnClientOnServer(GameObject clientObj)
     {
-        List<string> memberNames = new List<string>();
-        int memberCount = SteamMatchmaking.GetNumLobbyMembers(new CSteamID(CurrentLobbyID));
-
-        for (int i = 0; i < memberCount; i++)
-        {
-            CSteamID memberID = SteamMatchmaking.GetLobbyMemberByIndex(new CSteamID(CurrentLobbyID), i);
-            string memberName = SteamFriends.GetFriendPersonaName(memberID);
-            memberNames.Add(memberName);
-        }
-
-        LobbyInfo.SetMembers(memberNames);
+        instance._networkManager.ServerManager.Spawn(clientObj);
     }
 
     private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
     {
-        UpdateLobbyMembers();
+        LobbyInfo.UpdateLobbyInfo(CurrentLobbyID);
     }
 
     public static void JoinByID(CSteamID steamID)
@@ -111,6 +103,6 @@ public class BootstrapManager : MonoBehaviour
         instance._fishySteamworks.StopConnection(/*server =*/ false);
         if(instance._networkManager.IsServer)
             instance._fishySteamworks.StopConnection(/*server = */ true);
-        LobbyInfo.SetMembers(new List<string>());
+        LobbyInfo.UpdateLobbyInfo(CurrentLobbyID);
     }
 }

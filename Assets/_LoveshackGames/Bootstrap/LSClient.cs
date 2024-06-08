@@ -11,10 +11,23 @@ using Steamworks;
 public class LSClient : NetworkBehaviour
 {
     public string playerName;
+    public bool isOwnedClient;
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (base.IsOwner)
+        {
+            isOwnedClient = true;
+        }
+        else
+        {
+        }
+    }
 
     public void Start()
     {
         playerName = SteamFriends.GetPersonaName().ToString();
-        gameObject.name = "Client("+playerName+")";
+        gameObject.name = "Client(" + playerName + ")";
     }
 }

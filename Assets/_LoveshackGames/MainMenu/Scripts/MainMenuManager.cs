@@ -40,20 +40,8 @@ public class MainMenuManager : MonoBehaviour
     }
 
     public void OnPlayButtonClicked(){
-        //LSGame game = games[selectedGameIndex].GetComponent<LSGame>();
         BootstrapNetworkManager.StartGame(games[selectedGameIndex]);
-        //game.Open();
-        //if(game.sceneNameToLoadOnOpen != "")
-        //{
-        //    string[] scenesToClose = new string[] {"MainMenu"};
-        //    BootstrapNetworkManager.ChangeNetworkScene(game.sceneNameToLoadOnOpen, scenesToClose);
-        //}
     }
-
-    /*public void OpenMainMenu()
-    {
-        menuScreen.SetActive(true);
-    }*/
 
     public static void LobbyEntered(string lobbyName, bool isHost)
     {
@@ -62,7 +50,8 @@ public class MainMenuManager : MonoBehaviour
         Debug.Log("lobby entered: "+lobbyName);
         instance.lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
         instance.PrintLobbyMembers();
-        //instance.lobbyIDText.text = BootstrapManager.CurrentLobbyID.ToString();
+
+        BootstrapManager.SpawnClientOnServer(LobbyInfo.GetOwnedClient());
     }
 
     public void PrintLobbyMembers()
@@ -84,15 +73,6 @@ public class MainMenuManager : MonoBehaviour
             Debug.Log("Lobby member: " + name);
         }
     }
-
-    /*
-    this was for the old join by lobby ID button
-    public void JoinLobby()
-    {
-        lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
-        PrintLobbyMembers();
-        BootstrapManager.JoinByID(lobbyID);
-    }*/
 
     public void StartGame() 
     {

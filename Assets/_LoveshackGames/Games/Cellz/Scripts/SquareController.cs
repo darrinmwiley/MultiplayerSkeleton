@@ -55,6 +55,7 @@ public class SquareController : NetworkBehaviour
     [ServerRpc]
     public void InitClientServer(GameObject go, string playerID, string playerName, Color color)
     {
+        Debug.Log("server recieved init client request");
         SquareController ctrl = go.GetComponent<SquareController>();
         ctrl.playerID = playerID;
         ctrl.playerName = playerName;

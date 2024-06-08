@@ -29,6 +29,33 @@ public class BootstrapNetworkManager : NetworkBehaviour
         instance.ChangeNetworkSceneHelper(sceneName, scenesToClose);
     }
 
+    public static void OpenGame(LSGame game)
+    {
+        instance.OpenGameServer(game.gameObject);    
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void OpenGameServer(GameObject gameObj)
+    {
+        LSGame game = gameObj.GetComponent<LSGame>();
+        if(game.sceneNameToLoadOnOpen != "")
+        {
+            SceneLoadData sld = new SceneLoadData(game.sceneNameToLoadOnOpen);
+            ICollection<NetworkConnection> conns = instance.ServerManager.Clients.Values;
+            NetworkConnection[] array = new NetworkConnection[conns.Count];
+            conns.CopyTo(array, 0);
+            instance.SceneManager.LoadConnectionScenes(array, sld);
+        }
+        OpenGameClient(gameObj);
+    }
+
+    [ObserversRpc]
+    void OpenGameClient(GameObject gameObj)
+    {
+        LSGame game = gameObj.GetComponent<LSGame>();
+        game.Open();
+    }
+
     [ObserversRpc]
     void CloseScenes(string[] scenesToClose)
     {

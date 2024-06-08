@@ -47,6 +47,7 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnPlayButtonClicked(){
         LSGame game = games[selectedGameIndex].GetComponent<LSGame>();
+        BootstrapNetworkManager.OpenGame(game);
         game.Open();
         if(game.sceneNameToLoadOnOpen != "")
         {

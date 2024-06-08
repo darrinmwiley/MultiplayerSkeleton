@@ -11,6 +11,8 @@ public class MainMenuManager : MonoBehaviour
     private static MainMenuManager instance;
 
     private bool inLobby;
+    private bool lobbyOwner;
+    private bool lobbyPublic = true;
     private string lobbyName;
     private CSteamID lobbyID;
 
@@ -32,17 +34,9 @@ public class MainMenuManager : MonoBehaviour
         instance = this;
     } 
 
-    //idea: autoLobby
-    public void CreateLobby()
-    {
-        Debug.Log("invoking createLobby");
-        if(inLobby){
-            LeaveLobby();
-            inLobby = false;
-        }else{
-            BootstrapManager.CreateLobby();
-            inLobby = true;
-        }
+    private void Start(){
+        BootstrapManager.CreateLobby();
+        lobbyOwner = true;
     }
 
     public void OnPlayButtonClicked(){
@@ -70,7 +64,6 @@ public class MainMenuManager : MonoBehaviour
     {
         instance.inLobby = true;
         instance.lobbyName = lobbyName;
-        instance.lobbyButtonText.text = "Leave Lobby";
         Debug.Log("lobby entered: "+lobbyName);
         instance.lobbyID = new CSteamID(System.Convert.ToUInt64(BootstrapManager.CurrentLobbyID.ToString()));
         instance.PrintLobbyMembers();
@@ -115,8 +108,9 @@ public class MainMenuManager : MonoBehaviour
     public void LeaveLobby()
     {
         instance.lobbyInfoText.text = "No Lobby";
-        instance.lobbyButtonText.text = "Create Lobby";
         BootstrapManager.LeaveLobby();
+        BootstrapManager.CreateLobby();
+        lobbyOwner = true;
     }
 
     public void UpdateLobbyInfo(){

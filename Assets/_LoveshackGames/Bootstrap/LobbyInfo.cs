@@ -6,6 +6,7 @@ public class LobbyInfo : MonoBehaviour
 {
     public static LobbyInfo instance;
     public List<string> members = new List<string>();
+    public bool isOwner;
 
     void Awake() => instance = this;
 

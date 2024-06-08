@@ -73,11 +73,6 @@ public class BootstrapManager : MonoBehaviour
         UpdateLobbyMembers();
     }
 
-    private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
-    {
-        UpdateLobbyMembers();
-    }
-
     private void UpdateLobbyMembers()
     {
         List<string> memberNames = new List<string>();
@@ -93,6 +88,11 @@ public class BootstrapManager : MonoBehaviour
         LobbyInfo.SetMembers(memberNames);
     }
 
+    private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
+    {
+        UpdateLobbyMembers();
+    }
+
     public static void JoinByID(CSteamID steamID)
     {
         Debug.Log("attempting to join lobby id "+steamID.m_SteamID);
@@ -103,6 +103,7 @@ public class BootstrapManager : MonoBehaviour
         }
     }
 
+    //not currently called, but we don't need very rich lobby settings. can be scoped out later. For now, it's just friends can join
     public static void LeaveLobby()
     {
         SteamMatchmaking.LeaveLobby(new CSteamID(CurrentLobbyID));

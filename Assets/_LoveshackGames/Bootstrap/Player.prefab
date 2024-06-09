@@ -56,7 +56,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 0a6fde0f9b7407543a93fa0de3b69c96, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -107,6 +107,9 @@ MonoBehaviour:
   playerName: 
   color: {r: 0, g: 0, b: 0, a: 0}
   instance: {fileID: 0}
+  maxSize: 3
+  currentSize: 0
+  growthRate: 0.1
 --- !u!114 &7089346663524519499
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -21,6 +21,11 @@ public class SquareController : NetworkBehaviour
 
     public SquareController instance;
 
+    public float maxSize = 3;
+    public float currentSize;
+    private float startSize = .2f;
+    public float growthRate = .1f;
+
     void Awake() => instance = this;
 
     public override void OnStartClient()
@@ -47,6 +52,9 @@ public class SquareController : NetworkBehaviour
         x = Random.Range(-8, 8);
         y = Random.Range(-4, 4);
         transform.position = new Vector3(x, y, transform.position.z);
+
+
+        gameObject.transform.localScale = new Vector3(startSize, startSize, startSize);
 
         // Now that initialization is complete, call the server RPC
         OnPlayerJoinedServer(playerName);
@@ -88,6 +96,11 @@ public class SquareController : NetworkBehaviour
     void Update()
     {
         if (!IsOwner) return;
+
+        if(currentSize < maxSize){
+            currentSize += growthRate * Time.deltaTime;
+            gameObject.transform.localScale = new Vector3(currentSize, currentSize, currentSize);
+        }
 
         // If arrow keys are pressed, move player location accordingly
         float moveX = 0;

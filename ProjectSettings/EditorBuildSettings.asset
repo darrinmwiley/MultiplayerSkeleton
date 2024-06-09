@@ -14,7 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_LoveshackGames/MainMenu/MainMenu.unity
     guid: 69b081a3e19955547a23f0be01ff0535
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/GameScene.unity
     guid: a085895bcd7a9694b8eaf88c896f6a4e
   - enabled: 1

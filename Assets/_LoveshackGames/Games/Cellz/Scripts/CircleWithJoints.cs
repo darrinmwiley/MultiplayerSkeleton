@@ -71,6 +71,21 @@ public class CircleWithJoints : MonoBehaviour
             spring.distance = radius;
             spring.frequency = springFrequency;
             spring.dampingRatio = springDampingRatio;
+
+            // Create and configure slider joint between the small circle and center circle
+            SliderJoint2D slider = smallCircles[i].AddComponent<SliderJoint2D>();
+            slider.connectedBody = centerRb;
+            slider.autoConfigureAngle = false;
+            slider.angle = Mathf.Atan2(pos.y, pos.x) * Mathf.Rad2Deg; // Set the axis to point to the center
+
+            // Configure the slider limits
+            /*slider.useLimits = true;
+            JointTranslationLimits2D limits = new JointTranslationLimits2D
+            {
+                min = 0, // Prevent moving towards the center beyond the start point
+                max = radius // Maximum distance
+            };
+            slider.limits = limits;*/
         }
 
         // Connect small circles with spring joints to their neighbors
@@ -96,8 +111,7 @@ public class CircleWithJoints : MonoBehaviour
         }
         List<Vector2> hull = QuickHull(pointPositions);
 
-        // Generate the initial texture based on the convex hull
-        UpdateMesh(hull);
+        UpdateMeshWithPoints();
     }
 
     void Update()
@@ -133,10 +147,10 @@ public class CircleWithJoints : MonoBehaviour
             pointPositions.Add(smallCircles[i].transform.position);
         }
 
-        List<Vector2> hull = QuickHull(pointPositions);
+        //List<Vector2> hull = QuickHull(pointPositions);
 
         // Update the existing texture based on the convex hull
-        UpdateMesh(hull);
+        UpdateMeshWithPoints();
     }
 
     GameObject CreateCircle(Vector2 position, float radius, string name)
@@ -154,6 +168,16 @@ public class CircleWithJoints : MonoBehaviour
         circle.transform.parent = transform;
 
         return circle;
+    }
+
+    void UpdateMeshWithPoints()
+    {
+        List<Vector2> points = new List<Vector2>();
+        foreach(GameObject circle in smallCircles)
+        {
+            points.Add(circle.transform.position);
+        }
+        UpdateMesh(points);
     }
 
     void UpdateMesh(List<Vector2> hull)

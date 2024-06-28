@@ -15,12 +15,13 @@ public class particle
         previous = pos;
         acceleration = Vector2.zero;
         gameObject = obj;
-        gameObject.transform.position = new Vector3(pos.x, pos.y, 0);
+        obj.active = false;
+        //gameObject.transform.position = new Vector3(pos.x, pos.y, 0);
     }
 
     public void SetPosition(Vector2 location)
     {
         position = location;
-        gameObject.transform.position = new Vector3(location.x, location.y, 0);
+        //gameObject.transform.position = new Vector3(location.x, location.y, 0);
     }
 }

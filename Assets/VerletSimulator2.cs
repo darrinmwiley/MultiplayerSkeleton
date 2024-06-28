@@ -20,7 +20,7 @@ public class VerletSimulator2 : MonoBehaviour
     {
         public particle center;
         public List<particle> ring;
-        public float hubForceMultiplier = 1.5f;
+        public float hubForceMultiplier = .8f;
 
         public Circle(particle center, List<particle> ring)
         {
@@ -43,23 +43,32 @@ public class VerletSimulator2 : MonoBehaviour
     //change this to Force once we have more than one force
     List<Spring> springs = new List<Spring>();
     List<Circle> circles = new List<Circle>();
+    List<Edge> edges = new List<Edge>();
 
     void Start()
     {
-        int numberOfCircles = 50; // Number of small circles to spawn
+        int numberOfCircles = 100; // Number of small circles to spawn
         float circleRadius = .4f; // Radius of each small circle
-        int numPoints = 8; // Number of points (particles) in each circle
-        float springForce = 1f; // Spring force
-        float damperForce = 0.1f; // Damper force
+        int numPoints = 12; // Number of points (particles) in each circle
+        float springForce = 7f; // Spring force
+        float damperForce = 0.2f; // Damper force
+
+        particle p1 = AddParticle(new Vector2(0, 5));
+        particle p2 = AddParticle(new Vector2(0,-5));
+        Edge e = new Edge(p1,p2);
+        edges.Add(e);
 
         for (int i = 0; i < numberOfCircles; i++)
         {
             Vector2 randomPosition = new Vector2(Random.Range(-5f, 5f), Random.Range(-3f, 3f));
-            AddCircle(randomPosition, circleRadius, numPoints, springForce, damperForce);
+            Circle c = AddCircle(randomPosition, circleRadius, numPoints, springForce, damperForce);
+            foreach(particle p in c.ring){
+                AddConstraint(new EdgeConstraint(e, p));
+            }
         }
     }
 
-    public void AddCircle(Vector2 center, float radius, int numPoints, float springForce, float damperForce)
+    public Circle AddCircle(Vector2 center, float radius, int numPoints, float springForce, float damperForce)
     {
         List<particle> circleParticles = new List<particle>();
         float angleStep = 2 * Mathf.PI / numPoints;
@@ -82,10 +91,12 @@ public class VerletSimulator2 : MonoBehaviour
             AddConstraint(new FixedAngleConstraint(hub, circleParticles[i]));
             AddSpring(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position), springForce, damperForce);
             AddSpring(circleParticles[i], circleParticles[nextIndex], Vector2.Distance(circleParticles[i].position, circleParticles[nextIndex].position), springForce, damperForce);
-            AddConstraint(new MinDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * .8f));
-            AddConstraint(new MaxDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * 1.25f));
+            AddConstraint(new MinDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * .6f));
+            AddConstraint(new MaxDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * 1.4f));
         }
-        circles.Add(new Circle(hub, circleParticles));
+        Circle ret = new Circle(hub, circleParticles);
+        circles.Add(ret);
+        return ret;
     }
 
     public particle AddParticle(Vector2 position)
@@ -119,7 +130,6 @@ public class VerletSimulator2 : MonoBehaviour
 
     void FixedUpdate()
     {
-        HandleInput();
         float dt = Time.fixedDeltaTime / substeps;
         for (int i = 0; i < substeps; i++)
         {
@@ -129,36 +139,26 @@ public class VerletSimulator2 : MonoBehaviour
         }
     }
 
-    void HandleInput()
+    Vector2 GetInputForce()
     {
-        if (controlledParticle != null)
+        Vector2 force = Vector2.zero;
+        if (Input.GetKey(KeyCode.UpArrow))
         {
-            Vector2 force = Vector2.zero;
-
-            if (Input.GetKey(KeyCode.UpArrow))
-            {
-                force.y += moveForce;
-            }
-            if (Input.GetKey(KeyCode.DownArrow))
-            {
-                force.y -= moveForce;
-            }
-            if (Input.GetKey(KeyCode.LeftArrow))
-            {
-                force.x -= moveForce;
-            }
-            if (Input.GetKey(KeyCode.RightArrow))
-            {
-                force.x += moveForce;
-            }
-
-            if (circles.Count != 0)
-                circles[0].ApplyForce(force);
-            else
-            {
-                controlledParticle.acceleration += force;
-            }
+            force.y += moveForce;
         }
+        if (Input.GetKey(KeyCode.DownArrow))
+        {
+            force.y -= moveForce;
+        }
+        if (Input.GetKey(KeyCode.LeftArrow))
+        {
+            force.x -= moveForce;
+        }
+        if (Input.GetKey(KeyCode.RightArrow))
+        {
+            force.x += moveForce;
+        }
+        return force;
     }
 
     void Integrate(float timestep)
@@ -176,6 +176,13 @@ public class VerletSimulator2 : MonoBehaviour
 
     void AccumulateForces()
     {
+        Vector2 force = GetInputForce();
+        if (circles.Count != 0)
+            circles[0].ApplyForce(force);
+        else
+        {
+            controlledParticle.acceleration += force;
+        }
         foreach (Spring spring in springs)
         {
             spring.Apply();
@@ -184,11 +191,26 @@ public class VerletSimulator2 : MonoBehaviour
 
     void SatisfyConstraints()
     {
-        constraints.Sort();
+        //todo don't sort this every time, just maintain a sorted list
+        //constraints.Sort();
 
         foreach (var constraint in constraints)
         {
             constraint.SatisfyConstraint();
+        }
+
+        foreach(Edge e in edges)
+        {
+            e.UpdateLine();
+            foreach(Circle c in circles)
+            {
+                foreach(particle p in c.ring){
+                    if(e.Intersects(p))
+                    {
+                        Debug.Log("cross");
+                    }
+                }
+            }
         }
     }
 

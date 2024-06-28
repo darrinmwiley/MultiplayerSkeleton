@@ -22,7 +22,7 @@ public class Spring : Force
         this.restDistance = distance;
         this.springForce = springForce;
         this.damperForce = damperForce;
-
+        //todo single linerenderer in parent
         lineRenderer = new GameObject("SpringLine").AddComponent<LineRenderer>();
         lineRenderer.startWidth = 0.02f;
         lineRenderer.endWidth = 0.02f;

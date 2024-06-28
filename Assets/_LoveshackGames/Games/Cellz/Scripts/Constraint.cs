@@ -1,11 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
-public interface Constraint
+public abstract class Constraint : IComparable<Constraint>
 {
-    abstract void SatisfyConstraint();
+    public abstract int GetOrder();
+    public abstract void SatisfyConstraint();
+
+    public int CompareTo(Constraint other)
+    {
+        return GetOrder().CompareTo(other.GetOrder());
+    }
 }
+
 public class FixedDistanceConstraint : Constraint
 {
     public particle p1;
@@ -28,7 +36,9 @@ public class FixedDistanceConstraint : Constraint
         lineRenderer.positionCount = 2;
     }
 
-    public void SatisfyConstraint()
+    public override int GetOrder() => 0;
+
+    public override void SatisfyConstraint()
     {
         Vector2 delta = p2.position - p1.position;
         float currentDistance = delta.magnitude;
@@ -50,6 +60,8 @@ public class FixedAngleConstraint : Constraint
     public particle child;
     private Vector2 direction;
 
+    public override int GetOrder() => 0;
+
     public FixedAngleConstraint(particle parent, particle child)
     {
         this.parent = parent;
@@ -58,7 +70,7 @@ public class FixedAngleConstraint : Constraint
         direction = toChild.normalized;
     }
 
-    public void SatisfyConstraint()
+    public override void SatisfyConstraint()
     {
         Vector2 toChild = child.position - parent.position;
         float projectionLength = Vector2.Dot(toChild, direction);
@@ -76,25 +88,29 @@ public class MinDistanceConstraint : Constraint
     //if this is true, only p2 will move. Otherwise they share
     bool parentMode;
 
+    public override int GetOrder() => 0;
+
     public MinDistanceConstraint(particle p1, particle p2, float minDistance, bool parentMode = false)
     {
         this.p1 = p1;
         this.p2 = p2;
         this.minDistance = minDistance;
+        this.parentMode = parentMode;
     }
 
-    public void SatisfyConstraint()
+    public override void SatisfyConstraint()
     {
         Vector2 delta = p2.position - p1.position;
         float currentDistance = delta.magnitude;
-        
+
         if (currentDistance < minDistance)
         {
             float difference = (minDistance - currentDistance) / currentDistance;
             Vector2 offset = delta * 0.5f * difference;
-            if(parentMode)
+            if (parentMode)
                 p2.position += offset * 2;
-            else{
+            else
+            {
                 p1.position -= offset;
                 p2.position += offset;
             }
@@ -110,6 +126,8 @@ public class MaxDistanceConstraint : Constraint
     // if this is true, only p2 will move. Otherwise they share
     bool parentMode;
 
+    public override int GetOrder() => 0;
+
     public MaxDistanceConstraint(particle p1, particle p2, float maxDistance, bool parentMode = false)
     {
         this.p1 = p1;
@@ -118,7 +136,7 @@ public class MaxDistanceConstraint : Constraint
         this.parentMode = parentMode;
     }
 
-    public void SatisfyConstraint()
+    public override void SatisfyConstraint()
     {
         Vector2 delta = p2.position - p1.position;
         float currentDistance = delta.magnitude;
@@ -135,5 +153,24 @@ public class MaxDistanceConstraint : Constraint
                 p2.position -= offset;
             }
         }
+    }
+}
+
+public class FixedConstraint : Constraint
+{
+    public particle p;
+    private Vector2 location;
+
+    public override int GetOrder() => 2;
+
+    public FixedConstraint(particle p)
+    {
+        this.p = p;
+        this.location = p.position;
+    }
+
+    public override void SatisfyConstraint()
+    {
+        p.position = location;
     }
 }

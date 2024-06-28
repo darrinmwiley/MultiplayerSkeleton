@@ -16,56 +16,8 @@ public class VerletSimulator2 : MonoBehaviour
     particle controlledParticle = null;
     public GameObject particlePrefab;
 
-    public class Spring
+    public class Circle
     {
-        public particle p1;
-        public particle p2;
-        public float restDistance;
-        public float springForce;
-        public float damperForce;
-        public LineRenderer lineRenderer;
-
-        public Spring(particle p1, particle p2, float distance, float springForce, float damperForce)
-        {
-            this.p1 = p1;
-            this.p2 = p2;
-            this.restDistance = distance;
-            this.springForce = springForce;
-            this.damperForce = damperForce;
-
-            lineRenderer = new GameObject("SpringLine").AddComponent<LineRenderer>();
-            lineRenderer.startWidth = 0.02f;
-            lineRenderer.endWidth = 0.02f;
-            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            lineRenderer.startColor = new Color(0, 0, 1, 0.5f); // Blue translucent
-            lineRenderer.endColor = new Color(0, 0, 1, 0.5f); // Blue translucent
-            lineRenderer.positionCount = 2;
-        }
-
-        public void ApplyForce()
-        {
-            Vector2 delta = p2.position - p1.position;
-            float currentDistance = delta.magnitude;
-            float displacement = currentDistance - restDistance;
-
-            Vector2 force = (displacement * springForce) * (delta / currentDistance);
-            p1.acceleration += force;
-            p2.acceleration -= force;
-
-            // Damping
-            Vector2 relativeVelocity = (p2.position - p2.previous) - (p1.position - p1.previous);
-            Vector2 dampingForce = relativeVelocity * damperForce;
-            p1.acceleration += dampingForce;
-            p2.acceleration -= dampingForce;
-
-            // Update line positions
-            lineRenderer.SetPosition(0, p1.gameObject.transform.position);
-            lineRenderer.SetPosition(1, p2.gameObject.transform.position);
-        }
-    }
-
-    public class Circle{
-
         public particle center;
         public List<particle> ring;
         public float hubForceMultiplier = 1.5f;
@@ -78,25 +30,23 @@ public class VerletSimulator2 : MonoBehaviour
 
         public void ApplyForce(Vector2 force)
         {
-            foreach(particle p in ring)
+            foreach (particle p in ring)
                 p.acceleration += force;
             center.acceleration += force * hubForceMultiplier;
             // apply the force to each ring point, and the force * hubForceMultiplier to the center
         }
-
     }
 
+    //change this to Entity
     List<particle> particles = new List<particle>();
+    List<Constraint> constraints = new List<Constraint>();
+    //change this to Force once we have more than one force
     List<Spring> springs = new List<Spring>();
-    List<FixedDistanceConstraint> fixedDistanceConstraints = new List<FixedDistanceConstraint>();
-    List<FixedAngleConstraint> angleConstraints = new List<FixedAngleConstraint>();
-    List<MinDistanceConstraint> minDistanceConstraints = new List<MinDistanceConstraint>();
-    List<MaxDistanceConstraint> maxDistanceConstraints = new List<MaxDistanceConstraint>();
     List<Circle> circles = new List<Circle>();
 
     void Start()
     {
-        int numberOfCircles = 500; // Number of small circles to spawn
+        int numberOfCircles = 50; // Number of small circles to spawn
         float circleRadius = .4f; // Radius of each small circle
         int numPoints = 8; // Number of points (particles) in each circle
         float springForce = 1f; // Spring force
@@ -123,28 +73,17 @@ public class VerletSimulator2 : MonoBehaviour
             Vector2 position = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
             particle p = AddParticle(position);
             circleParticles.Add(p);
-            // Connect each spoke particle to the hub with springs and FixedDistanceConstraints
-            //AddSpring(hub, p, radius, springForce, damperForce);
-            //AddFixedDistanceConstraint(hub, p, radius);
-        }
-
-        for (int i = 0; i < numPoints; i++)
-        {
-            int nextIndex = (i + 1) % numPoints;
-            // Connect each adjacent pair of spoke particles with springs and FixedDistanceConstraints
-            //AddSpring(circleParticles[i], circleParticles[nextIndex], Vector2.Distance(circleParticles[i].position, circleParticles[nextIndex].position), springForce, damperForce);
-            //AddFixedDistanceConstraint(circleParticles[i], circleParticles[nextIndex], Vector2.Distance(circleParticles[i].position, circleParticles[nextIndex].position));
         }
 
         for (int i = 0; i < numPoints; i++)
         {
             int nextIndex = (i + 1) % numPoints;
             // Add fixed angle constraints between the hub and adjacent spoke particles
-            AddAngleConstraint(hub, circleParticles[i]);
+            AddConstraint(new FixedAngleConstraint(hub, circleParticles[i]));
             AddSpring(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position), springForce, damperForce);
             AddSpring(circleParticles[i], circleParticles[nextIndex], Vector2.Distance(circleParticles[i].position, circleParticles[nextIndex].position), springForce, damperForce);
-            AddMinDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * .8f);
-            AddMaxDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * 1.25f);
+            AddConstraint(new MinDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * .8f));
+            AddConstraint(new MaxDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * 1.25f));
         }
         circles.Add(new Circle(hub, circleParticles));
     }
@@ -173,24 +112,9 @@ public class VerletSimulator2 : MonoBehaviour
         springs.Add(new Spring(p1, p2, distance, springForce, damperForce));
     }
 
-    public void AddFixedDistanceConstraint(particle p1, particle p2, float distance)
+    public void AddConstraint(Constraint constraint)
     {
-        fixedDistanceConstraints.Add(new FixedDistanceConstraint(p1, p2, distance));
-    }
-
-    public void AddAngleConstraint(particle parent, particle child)
-    {
-        angleConstraints.Add(new FixedAngleConstraint(parent, child));
-    }
-
-    public void AddMinDistanceConstraint(particle parent, particle child, float distance, bool parentMode = true)
-    {
-        minDistanceConstraints.Add(new MinDistanceConstraint(parent, child, distance, parentMode));
-    }
-
-    public void AddMaxDistanceConstraint(particle parent, particle child, float distance, bool parentMode = true)
-    {
-        maxDistanceConstraints.Add(new MaxDistanceConstraint(parent, child, distance, parentMode));
+        constraints.Add(constraint);
     }
 
     void FixedUpdate()
@@ -228,9 +152,10 @@ public class VerletSimulator2 : MonoBehaviour
                 force.x += moveForce;
             }
 
-            if(circles.Count != 0)
+            if (circles.Count != 0)
                 circles[0].ApplyForce(force);
-            else{
+            else
+            {
                 controlledParticle.acceleration += force;
             }
         }
@@ -253,27 +178,17 @@ public class VerletSimulator2 : MonoBehaviour
     {
         foreach (Spring spring in springs)
         {
-            spring.ApplyForce();
+            spring.Apply();
         }
     }
 
     void SatisfyConstraints()
     {
-        foreach (FixedDistanceConstraint fixedDistanceConstraint in fixedDistanceConstraints)
+        constraints.Sort();
+
+        foreach (var constraint in constraints)
         {
-            fixedDistanceConstraint.SatisfyConstraint();
-        }
-        foreach (FixedAngleConstraint angleConstraint in angleConstraints)
-        {
-            angleConstraint.SatisfyConstraint();
-        }
-        foreach(MinDistanceConstraint minDistanceConstraint in minDistanceConstraints)
-        {
-            minDistanceConstraint.SatisfyConstraint();
-        }
-        foreach(MaxDistanceConstraint maxDistanceConstraint in maxDistanceConstraints)
-        {
-            maxDistanceConstraint.SatisfyConstraint();
+            constraint.SatisfyConstraint();
         }
     }
 
@@ -283,7 +198,7 @@ public class VerletSimulator2 : MonoBehaviour
         {
             controlledParticle.gameObject.GetComponent<Renderer>().material.color = Color.gray;
         }
-        
+
         controlledParticle = p;
 
         if (controlledParticle != null)

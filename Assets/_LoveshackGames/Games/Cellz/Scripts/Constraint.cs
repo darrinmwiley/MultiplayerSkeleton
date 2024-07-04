@@ -85,17 +85,14 @@ public class MinDistanceConstraint : Constraint
     public particle p1;
     public particle p2;
     private float minDistance;
-    //if this is true, only p2 will move. Otherwise they share
-    bool parentMode;
 
     public override int GetOrder() => 0;
 
-    public MinDistanceConstraint(particle p1, particle p2, float minDistance, bool parentMode = false)
+    public MinDistanceConstraint(particle p1, particle p2, float minDistance)
     {
         this.p1 = p1;
         this.p2 = p2;
         this.minDistance = minDistance;
-        this.parentMode = parentMode;
     }
 
     public override void SatisfyConstraint()
@@ -107,13 +104,8 @@ public class MinDistanceConstraint : Constraint
         {
             float difference = (minDistance - currentDistance) / currentDistance;
             Vector2 offset = delta * 0.5f * difference;
-            if (parentMode)
-                p2.position += offset * 2;
-            else
-            {
-                p1.position -= offset;
-                p2.position += offset;
-            }
+            p1.position -= offset;
+            p2.position += offset;
         }
     }
 }
@@ -123,17 +115,14 @@ public class MaxDistanceConstraint : Constraint
     public particle p1;
     public particle p2;
     private float maxDistance;
-    // if this is true, only p2 will move. Otherwise they share
-    bool parentMode;
 
     public override int GetOrder() => 0;
 
-    public MaxDistanceConstraint(particle p1, particle p2, float maxDistance, bool parentMode = false)
+    public MaxDistanceConstraint(particle p1, particle p2, float maxDistance)
     {
         this.p1 = p1;
         this.p2 = p2;
         this.maxDistance = maxDistance;
-        this.parentMode = parentMode;
     }
 
     public override void SatisfyConstraint()
@@ -145,13 +134,8 @@ public class MaxDistanceConstraint : Constraint
         {
             float difference = (currentDistance - maxDistance) / currentDistance;
             Vector2 offset = delta * 0.5f * difference;
-            if (parentMode)
-                p2.position -= offset * 2;
-            else
-            {
                 p1.position += offset;
                 p2.position -= offset;
-            }
         }
     }
 }

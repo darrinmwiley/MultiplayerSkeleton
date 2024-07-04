@@ -4,28 +4,100 @@ using UnityEngine;
 
 public class VerletSimulator2 : MonoBehaviour
 {
-    static VerletSimulator2 instance;
+    public static VerletSimulator2 instance;
     void Awake() => instance = this;
 
     Vector2 gravity = new Vector2(0, -.01f);
     public int maxDistance = 3;
     public float moveForce = 1;
     public float drag = .01f;
-    public int substeps = 5;
+    public int substeps = 50;
 
     particle controlledParticle = null;
     public GameObject particlePrefab;
 
     public class Circle
     {
+        public int ID;
         public particle center;
         public List<particle> ring;
-        public float hubForceMultiplier = .8f;
+        public float hubForceMultiplier = 1f;
 
-        public Circle(particle center, List<particle> ring)
+        public static float minRadiusMultiplier = .8f;
+        public static float maxRadiusMultiplier = 1.4f;
+ 
+        private float radius;
+        public float outerRadius;
+
+        List<Spring> springs = new List<Spring>();
+        List<FixedAngleConstraint> fixedAngleConstraints = new List<FixedAngleConstraint>();
+        List<MinDistanceConstraint> minDistanceConstraints = new List<MinDistanceConstraint>();
+        List<MaxDistanceConstraint> maxDistanceConstraints = new List<MaxDistanceConstraint>();
+        List<Edge> edges = new List<Edge>();
+        public SoftBodyCell softBodyCell;
+        //TODO: clean way to apply edge constraints against another circle
+
+        public Circle(Vector2 centerPosition, float radius, int numPoints, float springForce, float damperForce, SoftBodyCell softBodyCell, int ID)
         {
-            this.center = center;
-            this.ring = ring;
+            this.ID = ID;
+            this.softBodyCell = softBodyCell;
+            this.radius = radius;
+            ring = new List<particle>();
+            float angleStep = 2 * Mathf.PI / numPoints;
+
+            Vector2 firstPosition = centerPosition + new Vector2(Mathf.Cos(angleStep), Mathf.Sin(angleStep)) * radius;
+            float nextAngle = 2 * angleStep;
+            Vector2 nextPosition = centerPosition + new Vector2(Mathf.Cos(nextAngle), Mathf.Sin(nextAngle)) * radius;
+            outerRadius = Vector2.Distance(firstPosition, nextPosition);
+            float colliderRadius = outerRadius / 2;
+
+            // Create the center particle at the center
+            center = instance.AddParticle(centerPosition);
+
+            for (int i = 0; i < numPoints; i++)
+            {
+                float angle = i * angleStep;
+                Vector2 position = centerPosition + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                particle p = instance.AddParticle(position, /*colliderRadius = */ colliderRadius, /*parentId = */ ID);
+                p.parentId = ID;
+                ring.Add(p);
+            }
+
+            for (int i = 0; i < numPoints; i++)
+            {
+                int nextIndex = (i + 1) % numPoints;
+                // Add fixed angle constraints between the center and adjacent spoke particles
+                fixedAngleConstraints.Add(new FixedAngleConstraint(center, ring[i]));
+                springs.Add(new Spring(center, ring[i], Vector2.Distance(ring[i].position, center.position), springForce, damperForce, /*parentMode = */ false, /*visible = */ false));
+                springs.Add(new Spring(ring[i], ring[nextIndex], Vector2.Distance(ring[i].position, ring[nextIndex].position), springForce*.2f, damperForce, /* parentMode = */ false, /*visible = */ false));
+                minDistanceConstraints.Add(new MinDistanceConstraint(center, ring[i], Vector2.Distance(ring[i].position, center.position) * minRadiusMultiplier));
+                maxDistanceConstraints.Add(new MaxDistanceConstraint(center, ring[i], Vector2.Distance(ring[i].position, center.position) * maxRadiusMultiplier));
+            }
+        }
+
+        public void AccumulateForces()
+        {
+            if(softBodyCell.isControlled){
+                ApplyForce(instance.GetInputForce());
+            }
+            foreach(Spring spring in springs){
+                spring.Apply();
+            }
+        }
+
+        public void SatisfyConstraints(){
+            //Vector3 softBodyPosition = softBodyCell.transform.position;
+            //center.position = new Vector2(softBodyPosition.x, softBodyPosition.y);
+            //center.previous = center.position;
+            foreach(Constraint constraint in minDistanceConstraints){
+                constraint.SatisfyConstraint();
+            }
+            foreach(Constraint constraint in maxDistanceConstraints){
+                constraint.SatisfyConstraint();
+            }
+            foreach(Constraint constraint in fixedAngleConstraints){
+                constraint.SatisfyConstraint();
+            }
         }
 
         public void ApplyForce(Vector2 force)
@@ -35,97 +107,138 @@ public class VerletSimulator2 : MonoBehaviour
             center.acceleration += force * hubForceMultiplier;
             // apply the force to each ring point, and the force * hubForceMultiplier to the center
         }
+
+        public void ResolveCollisionsForParticle(particle particle)
+        {
+            // Define a ray in the +x direction from the particle's current position
+            /*Vector2 rayOrigin = particle.position;
+            Vector2 rayDirection = Vector2.right;
+
+            int intersectCount = 0;
+
+            // Check intersections with each edge
+            foreach (Edge edge in edges)
+            {
+                Vector2 intersectionPoint;
+
+                // Check if the ray intersects with the edge
+                // TODO, use a more efficient intersection algo
+                //if (LineUtil.IntersectLineSegments2D(rayOrigin, rayOrigin + rayDirection * 1000f, edge.p1.position, edge.p2.position, out intersectionPoint))
+                //{
+                    intersectCount++;
+                //}
+            }
+
+            // Determine if particle is inside or outside based on intersect count
+            bool isInside = (intersectCount % 2) == 1;
+
+            if (isInside)
+            {
+                //HandleCollision(particle); // Stubbed out method to handle collision
+            }*/
+        }
+
+        // Method to handle collision and project particle out of nearest edge
+        private void HandleCollision(particle particle)
+        {
+            // Find the nearest edge
+            Edge nearestEdge = FindNearestEdge(particle.position);
+
+            if (nearestEdge != null)
+            {
+                // Project the particle out of the nearest edge
+                Vector2 edgeDirection = (nearestEdge.p2.position - nearestEdge.p1.position).normalized;
+                Vector2 particleToEdge = particle.position - nearestEdge.p1.position;
+                float distanceAlongEdge = Vector2.Dot(particleToEdge, edgeDirection);
+                Vector2 projectionPoint = nearestEdge.p1.position + Mathf.Clamp(distanceAlongEdge, 0f, Vector2.Distance(nearestEdge.p1.position, nearestEdge.p2.position)) * edgeDirection;
+
+                // Apply a small offset to ensure the particle is outside the edge
+                float offsetDistance = 0.01f;
+                particle.position = projectionPoint + edgeDirection * offsetDistance;
+                particle.previous = particle.position; // Update previous position to prevent re-collision
+            }
+        }
+
+        // Method to find the nearest edge to a given point
+        private Edge FindNearestEdge(Vector2 point)
+        {
+            Edge nearestEdge = null;
+            float minDistance = float.MaxValue;
+
+            foreach (Edge edge in edges)
+            {
+                float distance = LineUtil.DistancePointToLineSegment(point, edge.p1.position, edge.p2.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearestEdge = edge;
+                }
+            }
+
+            return nearestEdge;
+        }
+
+        //call this only when two circle's bounding boxes intersect
+        //we can approximate bounding box by using a circle of maxDistanceConstraint length
+        public void ResolveCollisions(Circle circle)
+        {
+            foreach(particle p in circle.ring)
+            {
+                ResolveCollisionsForParticle(p);
+            }
+        }
+
+        // Method to get the maximum bounding box
+        //TODO: stop recreating this every frame, attach to circle GO intead since it's a fixed size
+        public Rect GetMaxBoundingBox()
+        {
+            // Calculate the radius considering the max distance constraint
+            float maxRadius = radius * maxRadiusMultiplier;
+
+            // Create a bounding box based on the center and max radius
+            Vector2 size = new Vector2(maxRadius * 2, maxRadius * 2);
+            Rect boundingBox = new Rect(center.position - size / 2, size);
+
+            // Visualize bounding box as a square
+            Debug.DrawLine(new Vector3(boundingBox.xMin, boundingBox.yMin), new Vector3(boundingBox.xMax, boundingBox.yMin), Color.red);
+            Debug.DrawLine(new Vector3(boundingBox.xMax, boundingBox.yMin), new Vector3(boundingBox.xMax, boundingBox.yMax), Color.red);
+            Debug.DrawLine(new Vector3(boundingBox.xMax, boundingBox.yMax), new Vector3(boundingBox.xMin, boundingBox.yMax), Color.red);
+            Debug.DrawLine(new Vector3(boundingBox.xMin, boundingBox.yMax), new Vector3(boundingBox.xMin, boundingBox.yMin), Color.red);
+
+            return boundingBox;
+        }
     }
 
     //change this to Entity
     List<particle> particles = new List<particle>();
-    List<Constraint> constraints = new List<Constraint>();
-    //change this to Force once we have more than one force
-    List<Spring> springs = new List<Spring>();
     List<Circle> circles = new List<Circle>();
     List<Edge> edges = new List<Edge>();
 
-    void Start()
+    public Circle AddCircle(Vector2 center, float radius, int numPoints, float springForce, float damperForce, SoftBodyCell softBodyCell)
     {
-        int numberOfCircles = 100; // Number of small circles to spawn
-        float circleRadius = .4f; // Radius of each small circle
-        int numPoints = 12; // Number of points (particles) in each circle
-        float springForce = 7f; // Spring force
-        float damperForce = 0.2f; // Damper force
-
-        particle p1 = AddParticle(new Vector2(0, 5));
-        particle p2 = AddParticle(new Vector2(0,-5));
-        Edge e = new Edge(p1,p2);
-        edges.Add(e);
-
-        for (int i = 0; i < numberOfCircles; i++)
-        {
-            Vector2 randomPosition = new Vector2(Random.Range(-5f, 5f), Random.Range(-3f, 3f));
-            Circle c = AddCircle(randomPosition, circleRadius, numPoints, springForce, damperForce);
-            foreach(particle p in c.ring){
-                AddConstraint(new EdgeConstraint(e, p));
-            }
-        }
+        Circle c = new Circle(center, radius, numPoints, springForce, damperForce, softBodyCell, circles.Count);
+        circles.Add(c);
+        return c;
     }
 
-    public Circle AddCircle(Vector2 center, float radius, int numPoints, float springForce, float damperForce)
+    public particle AddParticle(Vector2 position, float colliderRadius = 0, int parentId = -1)
     {
-        List<particle> circleParticles = new List<particle>();
-        float angleStep = 2 * Mathf.PI / numPoints;
-
-        // Create the hub particle at the center
-        particle hub = AddParticle(center);
-
-        for (int i = 0; i < numPoints; i++)
-        {
-            float angle = i * angleStep;
-            Vector2 position = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-            particle p = AddParticle(position);
-            circleParticles.Add(p);
-        }
-
-        for (int i = 0; i < numPoints; i++)
-        {
-            int nextIndex = (i + 1) % numPoints;
-            // Add fixed angle constraints between the hub and adjacent spoke particles
-            AddConstraint(new FixedAngleConstraint(hub, circleParticles[i]));
-            AddSpring(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position), springForce, damperForce);
-            AddSpring(circleParticles[i], circleParticles[nextIndex], Vector2.Distance(circleParticles[i].position, circleParticles[nextIndex].position), springForce, damperForce);
-            AddConstraint(new MinDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * .6f));
-            AddConstraint(new MaxDistanceConstraint(hub, circleParticles[i], Vector2.Distance(circleParticles[i].position, hub.position) * 1.4f));
-        }
-        Circle ret = new Circle(hub, circleParticles);
-        circles.Add(ret);
-        return ret;
-    }
-
-    public particle AddParticle(Vector2 position)
-    {
-        particle p = CreateParticle(position);
+        particle p = CreateParticle(position, colliderRadius, parentId);
         particles.Add(p);
         return p;
     }
 
-    public particle CreateParticle(Vector2 position)
+    public particle CreateParticle(Vector2 position, float colliderRadius, int parentId)
     {
-        GameObject particleObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        particleObj.transform.localScale = new Vector3(.1f, .1f, .1f);
+        GameObject particleObj = new GameObject();
         particleObj.AddComponent<ParticleClickHandler>();
         ParticleClickHandler handler = particleObj.GetComponent<ParticleClickHandler>();
-        handler.particle = new particle(position, particleObj);
+        particle p = particleObj.AddComponent<particle>();
+        p.Init(position, colliderRadius, parentId, particles.Count);
+        handler.particle = p;
         handler.simulator = this;
 
-        return handler.particle;
-    }
-
-    public void AddSpring(particle p1, particle p2, float distance, float springForce, float damperForce)
-    {
-        springs.Add(new Spring(p1, p2, distance, springForce, damperForce));
-    }
-
-    public void AddConstraint(Constraint constraint)
-    {
-        constraints.Add(constraint);
+        return p;
     }
 
     void FixedUpdate()
@@ -176,16 +289,17 @@ public class VerletSimulator2 : MonoBehaviour
 
     void AccumulateForces()
     {
-        Vector2 force = GetInputForce();
+        /*Vector2 force = GetInputForce();
         if (circles.Count != 0)
             circles[0].ApplyForce(force);
         else
         {
             controlledParticle.acceleration += force;
-        }
-        foreach (Spring spring in springs)
+        }*/
+        Vector2 input = GetInputForce();
+        foreach (Circle circle in circles)
         {
-            spring.Apply();
+            circle.AccumulateForces();
         }
     }
 
@@ -194,23 +308,50 @@ public class VerletSimulator2 : MonoBehaviour
         //todo don't sort this every time, just maintain a sorted list
         //constraints.Sort();
 
-        foreach (var constraint in constraints)
+        foreach (Circle circle in circles)
         {
-            constraint.SatisfyConstraint();
+            circle.SatisfyConstraints();
         }
 
-        foreach(Edge e in edges)
-        {
-            e.UpdateLine();
-            foreach(Circle c in circles)
-            {
-                foreach(particle p in c.ring){
-                    if(e.Intersects(p))
-                    {
-                        Debug.Log("cross");
-                    }
+        foreach(particle p in particles){
+            foreach(int intersectingId in p.intersectingParticles){
+                particle q = particles[intersectingId];
+                if(p.parentId != q.parentId)
+                {
+                    PushOut(p, q);
                 }
             }
+        }
+    }
+
+    void PushOut(particle p, particle q)
+    {
+        // Calculate the direction vectors from each particle to the center of their own circles
+        Vector2 directionP = p.position - circles[p.parentId].center.position;
+        Vector2 directionQ = q.position - circles[q.parentId].center.position;
+
+        // Calculate the distance between the two particles
+        float distance = (p.position - q.position).magnitude;
+        float overlap = p.size + q.size - distance;
+
+        // If they are intersecting (overlap is positive)
+        if (overlap > 0)
+        {
+            // Normalize the direction vectors
+            directionP.Normalize();
+            directionQ.Normalize();
+
+            // Calculate the push distance
+            Vector2 pushDistanceP = directionP * overlap / 2;
+            Vector2 pushDistanceQ = directionQ * overlap / 2;
+
+            // Move each particle away from the center of its parent circle
+            p.position -= pushDistanceP;
+            q.position -= pushDistanceQ;
+            
+            // Update previous positions to prevent re-collision
+            p.previous = p.position;
+            q.previous = q.position;
         }
     }
 
@@ -218,14 +359,14 @@ public class VerletSimulator2 : MonoBehaviour
     {
         if (controlledParticle != null)
         {
-            controlledParticle.gameObject.GetComponent<Renderer>().material.color = Color.gray;
+            //controlledParticle.gameObject.GetComponent<Renderer>().material.color = Color.gray;
         }
 
         controlledParticle = p;
 
         if (controlledParticle != null)
         {
-            controlledParticle.gameObject.GetComponent<Renderer>().material.color = Color.white;
+            //controlledParticle.gameObject.GetComponent<Renderer>().material.color = Color.white;
         }
     }
 }

@@ -2,20 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Shape
-{
-    List<particle> particles;
-
-    public Shape(List<particle> list)
-    {
-        //make edges between each particle
-    }
-}
-
 public class Edge
 {
     public particle p1, p2;
-    public LineRenderer lineRenderer;
+    //public LineRenderer lineRenderer;
 
     public Edge(particle p1, particle p2)
     {
@@ -24,13 +14,13 @@ public class Edge
 
         // Create a GameObject for the LineRenderer
         GameObject lineObj = new GameObject("EdgeLine");
-        lineRenderer = lineObj.AddComponent<LineRenderer>();
+        /*lineRenderer = lineObj.AddComponent<LineRenderer>();
         lineRenderer.startWidth = 0.02f;
         lineRenderer.endWidth = 0.02f;
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.startColor = Color.white;
         lineRenderer.endColor = Color.white;
-        lineRenderer.positionCount = 2;
+        lineRenderer.positionCount = 2;*/
     }
 
     public bool Intersects(particle p)
@@ -46,11 +36,11 @@ public class Edge
 
     public void UpdateLine()
     {
-        if (lineRenderer != null)
-        {
-            lineRenderer.SetPosition(0, p1.gameObject.transform.position);
-            lineRenderer.SetPosition(1, p2.gameObject.transform.position);
-        }
+        //if (lineRenderer != null)
+        //{
+            //lineRenderer.SetPosition(0, p1.gameObject.transform.position);
+            //lineRenderer.SetPosition(1, p2.gameObject.transform.position);
+        //}
     }
 }
 
@@ -67,6 +57,26 @@ public static class LineUtil {
 
     public static float CrossProduct2D(Vector2 a, Vector2 b) {
         return a.x * b.y - b.x * a.y;
+    }
+
+    // Method to calculate distance from a point to a line segment
+    public static float DistancePointToLineSegment(Vector2 point, Vector2 lineStart, Vector2 lineEnd)
+    {
+        Vector2 lineDirection = lineEnd - lineStart;
+        float lineLength = lineDirection.magnitude;
+        lineDirection.Normalize();
+
+        Vector2 pointToLineStart = point - lineStart;
+        float projection = Vector2.Dot(pointToLineStart, lineDirection);
+        
+        if (projection <= 0)
+            return pointToLineStart.magnitude;
+
+        if (projection >= lineLength)
+            return (point - lineEnd).magnitude;
+
+        Vector2 nearestPointOnLine = lineStart + lineDirection * projection;
+        return (point - nearestPointOnLine).magnitude;
     }
 
     /// <summary>

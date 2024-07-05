@@ -49,8 +49,8 @@ public class FixedDistanceConstraint : Constraint
         p2.position -= offset;
 
         // Update line positions
-        lineRenderer.SetPosition(0, p1.gameObject.transform.position);
-        lineRenderer.SetPosition(1, p2.gameObject.transform.position);
+        lineRenderer.SetPosition(0, p1.position);
+        lineRenderer.SetPosition(1, p2.position);
     }
 }
 
@@ -108,6 +108,11 @@ public class MinDistanceConstraint : Constraint
             p2.position += offset;
         }
     }
+
+    public void SetDistance(float d)
+    {
+        minDistance = d;
+    }
 }
 
 public class MaxDistanceConstraint : Constraint
@@ -138,6 +143,11 @@ public class MaxDistanceConstraint : Constraint
                 p2.position -= offset;
         }
     }
+
+    public void SetDistance(float d)
+    {
+        maxDistance = d;
+    }
 }
 
 public class FixedConstraint : Constraint
@@ -159,45 +169,3 @@ public class FixedConstraint : Constraint
     }
 }
 
-public class EdgeConstraint : Constraint
-{
-    private Edge edge;
-    private particle particle;
-
-    public EdgeConstraint(Edge edge, particle particle)
-    {
-        this.edge = edge;
-        this.particle = particle;
-    }
-
-    public override int GetOrder() => 1;
-
-    public override void SatisfyConstraint()
-    {
-        Vector2 intersection;
-        Vector2 prevLoc = particle.previous;
-        Vector2 nextLoc = particle.position;
-
-        // Calculate the cross product to determine the side of the edge
-        Vector2 edgeDirection = edge.p2.position - edge.p1.position;
-        Vector2 toPrev = prevLoc - edge.p1.position;
-        Vector2 toNext = nextLoc - edge.p1.position;
-
-        float crossPrev = LineUtil.CrossProduct2D(edgeDirection, toPrev);
-        float crossNext = LineUtil.CrossProduct2D(edgeDirection, toNext);
-
-        // Check if the particle is crossing the edge from the specified side
-        if (crossPrev >= 0 && crossNext < 0)
-        {
-            if (LineUtil.IntersectLineSegments2D(edge.p1.position, edge.p2.position, prevLoc, nextLoc, out intersection))
-            {
-                // Calculate the edge normal vector
-                Vector2 edgeNormal = new Vector2(edgeDirection.y, -edgeDirection.x).normalized;
-                // Push the particle outwards perpendicular to the edge
-                float offsetDistance = 0.01f; // Small offset distance
-                particle.position = intersection - edgeNormal * offsetDistance;
-                particle.previous = particle.position; // Update previous position to prevent re-crossing
-            }
-        }
-    }
-}

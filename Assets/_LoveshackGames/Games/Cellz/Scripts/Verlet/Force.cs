@@ -38,6 +38,11 @@ public class Spring : Force
         this.visible = visible;
     }
 
+    public void SetDistance(float d)
+    {
+        restDistance = d;
+    }
+
     public void Apply()
     {
         Vector2 delta = p2.position - p1.position;
@@ -61,8 +66,8 @@ public class Spring : Force
 
         if(visible){
             // Update line positions
-            lineRenderer.SetPosition(0, p1.gameObject.transform.position);
-            lineRenderer.SetPosition(1, p2.gameObject.transform.position);
+            lineRenderer.SetPosition(0, p1.position);
+            lineRenderer.SetPosition(1, p2.position);
         }
     }
 }

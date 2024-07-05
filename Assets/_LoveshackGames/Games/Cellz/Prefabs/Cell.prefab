@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4705386952777484955}
   - component: {fileID: 8886079199284458955}
   m_Layer: 0
-  m_Name: SoftBodyCell
+  m_Name: Cell
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47,12 +47,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed1e202eff8d74f4fb37a9a2b809af2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 1
-  numPoints: 12
+  radius: 0.3
+  numPoints: 8
   springForce: 17.86
   damperForce: 0.2
   isControlled: 0
-  moveForce: 63.22
+  detail: 1
+  moveForce: 15
 --- !u!33 &653267751279373760
 MeshFilter:
   m_ObjectHideFlags: 0

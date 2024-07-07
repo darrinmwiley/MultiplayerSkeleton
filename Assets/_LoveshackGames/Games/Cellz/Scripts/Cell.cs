@@ -2,47 +2,56 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter))]
-[RequireComponent(typeof(MeshRenderer))]
-[RequireComponent(typeof(Rigidbody2D))]
-public class Cell : MonoBehaviour
+public abstract class Cell
 {
-    public float radius;
-    public int numPoints;
-    public float springForce;
-    public float damperForce;
-    public bool isControlled;
+    public float radius = .2f;
+    public float maxRadius = 2.2f;
+    public int numPoints = 8;
+    public float springForce = 5;
+    public float damperForce = .2f;
+    public bool isControlled = false;
     public int detail = 1; // Default detail level
 
-    private Rigidbody2D rb;
+    public Rigidbody2D rb;
     public float moveForce = 3f;
 
     private MeshFilter meshFilter;
+    public MeshRenderer renderer;
     private Mesh mesh;
 
-    public VerletSoftBody circle;
+    public VerletSoftBody softBody;
     CircleCollider2D circleCollider;
 
     float growthRatePerSecond = .05f;
-    float nextGrowTime = 5;
 
-    void Start()
-    {
-        rb = GetComponent<Rigidbody2D>();
+    public GameObject gameObject;
+
+    public void Init(GameObject gameObject, Material material){
+        this.gameObject = gameObject;
+        meshFilter = gameObject.AddComponent<MeshFilter>();
+        mesh = new Mesh();
+        meshFilter.mesh = mesh;
+        renderer = gameObject.AddComponent<MeshRenderer>();
+        renderer.material = material; 
+        rb = gameObject.AddComponent<Rigidbody2D>();
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = 0f;
         rb.drag = 0.2f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         circleCollider = gameObject.AddComponent<CircleCollider2D>();
+        softBody = VerletSimulator.instance.AddVerletSoftBody(gameObject.transform.position, radius, numPoints, springForce, damperForce, this);
+    }
 
-        // Initialize Mesh components
-        meshFilter = GetComponent<MeshFilter>();
-        mesh = new Mesh();
-        meshFilter.mesh = mesh;
+    public void Destroy(){
+        if(isControlled)
+            ControlledCellHandler.SetControlledCell(null);
+        VerletSimulator.instance.RemoveSoftBody(softBody.ID);
+        Object.Destroy(gameObject);
+    }
 
-        // Initialize the circle in the Verlet simulator
-        circle = VerletSimulator.instance.AddVerletSoftBody(transform.position, radius, numPoints, springForce, damperForce, this);
-        circleCollider.radius = circle.radius;
+    public void SetPosition(Vector2 pos){
+        gameObject.transform.position = new Vector3(pos.x, pos.y, 0);
+        softBody.SetPosition(pos);
     }
 
     public void SetRadius(float r)
@@ -51,37 +60,37 @@ public class Cell : MonoBehaviour
         radius = r;
     }
 
-    void Update()
+    public void Update()
     {
-        SetRadius(radius + growthRatePerSecond * Time.deltaTime);
-        Vector2 pos = circle.center.position;
-        //gameObject.transform.position = new Vector3(pos.x, pos.y, 0);
+        if(radius < maxRadius)
+            SetRadius(radius + growthRatePerSecond * Time.deltaTime);
+        Vector2 pos = softBody.center.position;
         UpdateMesh();
     }
 
     void UpdateMesh()
     {
         // Calculate the number of vertices considering the detail level
-        int numVertices = circle.ring.Count * (detail + 1);
+        int numVertices = softBody.ring.Count * (detail + 1);
         Vector3[] vertices = new Vector3[numVertices];
 
         int vertexIndex = 0;
-        for (int i = 0; i < circle.ring.Count; i++)
+        for (int i = 0; i < softBody.ring.Count; i++)
         {
-            Vector2 p0 = circle.ring[i].position;
-            Vector2 p1 = circle.ring[(i + 1) % circle.ring.Count].position;
-            Vector2 m0 = circle.ring[(i - 1 + circle.ring.Count) % circle.ring.Count].position;
-            Vector2 m1 = circle.ring[(i + 2) % circle.ring.Count].position;
+            Vector2 p0 = softBody.ring[i].position;
+            Vector2 p1 = softBody.ring[(i + 1) % softBody.ring.Count].position;
+            Vector2 m0 = softBody.ring[(i - 1 + softBody.ring.Count) % softBody.ring.Count].position;
+            Vector2 m1 = softBody.ring[(i + 2) % softBody.ring.Count].position;
 
             // Add the main point
-            vertices[vertexIndex++] = new Vector3(p0.x - circle.center.position.x, p0.y - circle.center.position.y, 0);
+            vertices[vertexIndex++] = new Vector3(p0.x - softBody.center.position.x, p0.y - softBody.center.position.y, 0);
 
             // Add detail points
             for (int j = 1; j <= detail; j++)
             {
                 float t = j / (float)(detail + 1);
                 Vector2 interpolatedPoint = CatmullRomSpline(p0, p1, m0, m1, t);
-                vertices[vertexIndex++] = new Vector3(interpolatedPoint.x - circle.center.position.x, interpolatedPoint.y - circle.center.position.y, 0);
+                vertices[vertexIndex++] = new Vector3(interpolatedPoint.x - softBody.center.position.x, interpolatedPoint.y - softBody.center.position.y, 0);
             }
         }
 
@@ -115,7 +124,7 @@ public class Cell : MonoBehaviour
                       (-m0 + 3 * p0 - 3 * p1 + m1) * t3);
     }
 
-    void FixedUpdate()
+    public void FixedUpdate()
     {
         // Check arrow key inputs for movement
         Vector2 force = Vector2.zero;
@@ -139,5 +148,10 @@ public class Cell : MonoBehaviour
             // Apply force to the Rigidbody
             rb.AddForce(force * moveForce);
         }
+    }
+
+    public virtual void OnMouseDown(int mouseButton)
+    {
+        ControlledCellHandler.SetControlledCell(this);
     }
 }

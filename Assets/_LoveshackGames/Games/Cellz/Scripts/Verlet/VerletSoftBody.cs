@@ -62,6 +62,18 @@ public class VerletSoftBody
         }
     }
 
+    //corresponds to center pos
+    public void SetPosition(Vector2 pos){
+        center.position = pos;
+        center.previous = pos;
+        float angleStep = 2 * Mathf.PI / numPoints;
+        for (int i = 0; i < numPoints; i++)
+        {
+            float angle = i * angleStep;
+            ring[i].position = ring[i].previous = center.position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+        }
+    }
+
     public void SetRadius(float r)
     {
         this.radius = r;
@@ -71,13 +83,6 @@ public class VerletSoftBody
         float nextAngle = 2 * angleStep;
         Vector2 nextPosition = new Vector2(Mathf.Cos(nextAngle), Mathf.Sin(nextAngle)) * radius;
         outerRadius = Vector2.Distance(firstPosition, nextPosition);
-        float colliderRadius = outerRadius / 2;
-
-        for (int i = 0; i < numPoints; i++)
-        {
-            ring[i].SetRadius(colliderRadius);
-        }
-        
 
         for (int i = 0; i < numPoints; i++)
         {
@@ -104,7 +109,7 @@ public class VerletSoftBody
     }
 
     public void SatisfyConstraints(){
-        Vector3 softBodyPosition = cell.transform.position;
+        Vector3 softBodyPosition = cell.gameObject.transform.position;
         center.position = new Vector2(softBodyPosition.x, softBodyPosition.y);
         //center.previous = center.position;
         foreach(Constraint constraint in minDistanceConstraints){

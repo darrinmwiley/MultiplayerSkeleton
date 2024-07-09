@@ -6,7 +6,7 @@ public abstract class Cell
 {
     public float radius = .2f;
     public float maxRadius = 2.2f;
-    public int numPoints = 8;
+    public int numPoints = 12;
     public float springForce = 5;
     public float damperForce = .2f;
     public bool isControlled = false;
@@ -17,14 +17,21 @@ public abstract class Cell
 
     private MeshFilter meshFilter;
     public MeshRenderer renderer;
-    private Mesh mesh;
+    public Mesh mesh;
 
     public VerletSoftBody softBody;
     CircleCollider2D circleCollider;
+    public float softBodyRadiusMultiplier = 1.2f;
+    CircleCollider2D softBodyCollider;
 
     float growthRatePerSecond = .05f;
 
+    bool showOutline = true;
     public GameObject gameObject;
+    private LineRenderer lineRenderer;
+    public Color outlineColor = new Color(25 / 255f, 0, 45 / 255f); // Configurable outline color
+
+    public HashSet<int> overlappingSoftBodyIds = new HashSet<int>();
 
     public void Init(GameObject gameObject, Material material){
         this.gameObject = gameObject;
@@ -39,7 +46,22 @@ public abstract class Cell
         rb.drag = 0.2f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         circleCollider = gameObject.AddComponent<CircleCollider2D>();
+        softBodyCollider = gameObject.AddComponent<CircleCollider2D>();
+        softBodyCollider.isTrigger = true;
+        softBodyCollider.radius = radius * softBodyRadiusMultiplier;
         softBody = VerletSimulator.instance.AddVerletSoftBody(gameObject.transform.position, radius, numPoints, springForce, damperForce, this);
+
+        // Initialize LineRenderer
+        if(showOutline){
+            lineRenderer = gameObject.AddComponent<LineRenderer>();
+            lineRenderer.positionCount = numPoints;
+            lineRenderer.startWidth = Mathf.Min(radius / 10f, 0.1f);
+            lineRenderer.endWidth = Mathf.Min(radius / 10f, 0.1f);
+            lineRenderer.loop = true;
+            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            lineRenderer.startColor = outlineColor;
+            lineRenderer.endColor = outlineColor;
+        }
     }
 
     public void Destroy(){
@@ -57,6 +79,7 @@ public abstract class Cell
     public void SetRadius(float r)
     {
         circleCollider.radius = r;
+        softBodyCollider.radius = r * softBodyRadiusMultiplier;
         radius = r;
     }
 
@@ -64,7 +87,6 @@ public abstract class Cell
     {
         if(radius < maxRadius)
             SetRadius(radius + growthRatePerSecond * Time.deltaTime);
-        Vector2 pos = softBody.center.position;
         UpdateMesh();
     }
 
@@ -73,6 +95,8 @@ public abstract class Cell
         // Calculate the number of vertices considering the detail level
         int numVertices = softBody.ring.Count * (detail + 1);
         Vector3[] vertices = new Vector3[numVertices];
+        Vector3[] lineVertices = new Vector3[numVertices];
+
 
         int vertexIndex = 0;
         for (int i = 0; i < softBody.ring.Count; i++)
@@ -83,14 +107,15 @@ public abstract class Cell
             Vector2 m1 = softBody.ring[(i + 2) % softBody.ring.Count].position;
 
             // Add the main point
-            vertices[vertexIndex++] = new Vector3(p0.x - softBody.center.position.x, p0.y - softBody.center.position.y, 0);
-
+            vertices[vertexIndex] = new Vector3(p0.x - gameObject.transform.position.x, p0.y - gameObject.transform.position.y, 0);
+            lineVertices[vertexIndex++] = new Vector3(p0.x, p0.y, 0);
             // Add detail points
             for (int j = 1; j <= detail; j++)
             {
                 float t = j / (float)(detail + 1);
                 Vector2 interpolatedPoint = CatmullRomSpline(p0, p1, m0, m1, t);
-                vertices[vertexIndex++] = new Vector3(interpolatedPoint.x - softBody.center.position.x, interpolatedPoint.y - softBody.center.position.y, 0);
+                vertices[vertexIndex] = new Vector3(interpolatedPoint.x - gameObject.transform.position.x, interpolatedPoint.y - gameObject.transform.position.y, 0);
+                lineVertices[vertexIndex++] = new Vector3(interpolatedPoint.x, interpolatedPoint.y, 0);
             }
         }
 
@@ -112,6 +137,20 @@ public abstract class Cell
         // Recalculate normals and other necessary attributes
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
+
+        if(showOutline)
+            UpdateLineRenderer(lineVertices);
+    }
+
+    void UpdateLineRenderer(Vector3[] vertices)
+    {
+        if (lineRenderer != null && vertices != null)
+        {
+            lineRenderer.startWidth = Mathf.Min(radius / 10f, 0.1f);
+            lineRenderer.endWidth = Mathf.Min(radius / 10f, 0.1f);
+            lineRenderer.positionCount = vertices.Length;
+            lineRenderer.SetPositions(vertices);
+        }
     }
 
     Vector2 CatmullRomSpline(Vector2 p0, Vector2 p1, Vector2 m0, Vector2 m1, float t)

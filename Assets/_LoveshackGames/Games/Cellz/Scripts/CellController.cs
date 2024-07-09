@@ -41,4 +41,24 @@ public class CellController : MonoBehaviour
     {
         cell.FixedUpdate();
     }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        CellController otherCellController = other.GetComponent<CellController>();
+        if(otherCellController == null)
+            return;
+        VerletSoftBody softBody = otherCellController.cell.softBody;
+        cell.overlappingSoftBodyIds.Add(softBody.ID);
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        CellController otherCellController = other.GetComponent<CellController>();
+        if(otherCellController == null)
+            return;
+        VerletSoftBody softBody = otherCellController.cell.softBody;
+        cell.overlappingSoftBodyIds.Remove(softBody.ID);
+    }
+
+    //TODO: add collider enter exit mode
 }

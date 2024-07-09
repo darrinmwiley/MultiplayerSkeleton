@@ -12,7 +12,7 @@ public class VerletSimulator : MonoBehaviour
     public int substeps = 3;
 
     private int nextId = 0;
-    Dictionary<int, VerletSoftBody> circles = new Dictionary<int, VerletSoftBody>();
+    public Dictionary<int, VerletSoftBody> circles = new Dictionary<int, VerletSoftBody>();
     private int nextParticleId = 0;
     Dictionary<int, particle> particles = new Dictionary<int, particle>();
 

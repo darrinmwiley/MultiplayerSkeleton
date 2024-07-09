@@ -121,6 +121,31 @@ public class VerletSoftBody
         foreach(Constraint constraint in fixedAngleConstraints){
             constraint.SatisfyConstraint();
         }
+        foreach(int overlappingId in cell.overlappingSoftBodyIds){
+            for(int i = 0;i<numPoints;i++){
+                Vector2 p0 = ring[i].position;
+                Vector2 p1 = center.position;
+                VerletSoftBody other = VerletSimulator.instance.circles[overlappingId];
+                for(int j = 0;j<numPoints;j++){
+                    int nextIndex = j+1;
+                    if(nextIndex == numPoints)
+                        nextIndex = 0;
+                    Vector2 p2 = other.ring[j].position;
+                    Vector2 p3 = other.ring[nextIndex].position;
+                    Vector2 intersection;
+                    if(LineUtil.IntersectLineSegments2D(p0, p1, p2, p3, out intersection)){
+                        ring[i].position = intersection;
+                        ring[i].previous = intersection;
+                        //todo fix for cell splitting, and add borders to hide jank
+                    }
+                }
+            }
+            //TODO: find edge intersecting segment from pt to center
+
+        }
+        //foreach(Cell adjacentCell in cell.GetAllClose()):
+            //find edge intersecting line from point back to center
+                //set point location to intersection point
     }
 
     public void ApplyForce(Vector2 force)

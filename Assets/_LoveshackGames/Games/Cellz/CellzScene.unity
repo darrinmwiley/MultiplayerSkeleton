@@ -280,7 +280,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cellPrefab: {fileID: 8688028915269440293, guid: 86afc1e66da7c344b89f30d580b42b0b, type: 3}
-  numberOfCells: 50
+  numberOfCells: 1
   spacing: 3
   xmin: -5
   xmax: 5

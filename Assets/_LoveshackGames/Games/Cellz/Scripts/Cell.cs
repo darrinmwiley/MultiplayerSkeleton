@@ -4,6 +4,8 @@ using UnityEngine;
 
 public abstract class Cell
 {
+    Behaviour behaviour;
+
     public float radius = .2f;
     public float maxRadius = 2.2f;
     public int numPoints = 12;
@@ -34,6 +36,7 @@ public abstract class Cell
     public HashSet<int> overlappingSoftBodyIds = new HashSet<int>();
 
     public void Init(GameObject gameObject, Material material){
+        SetBehaviour(new IdleBehaviour());
         this.gameObject = gameObject;
         meshFilter = gameObject.AddComponent<MeshFilter>();
         mesh = new Mesh();
@@ -62,6 +65,12 @@ public abstract class Cell
             lineRenderer.startColor = outlineColor;
             lineRenderer.endColor = outlineColor;
         }
+    }
+
+    public void SetBehaviour(Behaviour behaviour)
+    {
+        this.behaviour = behaviour;
+        behaviour.cell = this;
     }
 
     public void Destroy(){
@@ -163,30 +172,27 @@ public abstract class Cell
                       (-m0 + 3 * p0 - 3 * p1 + m1) * t3);
     }
 
+    public void Move(Vector2 direction)
+    {
+        rb.AddForce(direction.normalized * moveForce);
+    }
+
+    public void MoveTowards(float x, float y)
+    {
+        // Get vector between gameobject and (x, y)
+        Vector2 direction = new Vector2(x, y) - (Vector2)gameObject.transform.position;
+        
+        // Normalize the direction to get a unit vector
+        direction.Normalize();
+        
+        // Apply moveForce in that direction
+        rb.AddForce(direction * moveForce);
+    }
+
     public void FixedUpdate()
     {
-        // Check arrow key inputs for movement
-        Vector2 force = Vector2.zero;
-
-        if (isControlled)
-        {
-            if (Input.GetKey(KeyCode.LeftArrow))
-                force += Vector2.left * moveForce;
-            if (Input.GetKey(KeyCode.RightArrow))
-                force += Vector2.right * moveForce;
-            if (Input.GetKey(KeyCode.UpArrow))
-                force += Vector2.up * moveForce;
-            if (Input.GetKey(KeyCode.DownArrow))
-                force += Vector2.down * moveForce;
-
-            // You may want to normalize force to ensure consistent speed
-            // This depends on your specific movement requirements
-            if (force.magnitude > 1f)
-                force.Normalize();
-
-            // Apply force to the Rigidbody
-            rb.AddForce(force * moveForce);
-        }
+        if(behaviour != null)
+            behaviour.FixedUpdate();
     }
 
     public virtual void OnMouseDown(int mouseButton)

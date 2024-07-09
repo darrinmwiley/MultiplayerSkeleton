@@ -21,6 +21,10 @@ public class CellController : MonoBehaviour
         cell.Update();
     }
 
+    void FixedUpdate(){
+        cell.FixedUpdate();
+    }
+
     void OnMouseOver()
     {
         if (Input.GetMouseButtonDown(0))
@@ -35,11 +39,6 @@ public class CellController : MonoBehaviour
         {
             cell.OnMouseDown(2);
         }
-    }
-
-    void FixedUpdate()
-    {
-        cell.FixedUpdate();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -60,5 +59,4 @@ public class CellController : MonoBehaviour
         cell.overlappingSoftBodyIds.Remove(softBody.ID);
     }
 
-    //TODO: add collider enter exit mode
 }
